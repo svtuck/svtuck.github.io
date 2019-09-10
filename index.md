@@ -1,6 +1,7 @@
 # Sam Tucker
 
 Visiting Instructor in CS at Carleton College (Fall 2019)
+
 Sr. Software Engineer at Amazon
 
 ## CS 201
