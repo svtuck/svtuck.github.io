@@ -1,6 +1,6 @@
 # CS 201
 
-This is a rough schedule, subject to change. Unless otherwise noted, assignemnts are due at 10 p.m. on the day listed. The readings are not generally long, and I expect them to be done before class. To reinforce this, you are expected to post a question or comment (or answer to another question) from the reading prior to class on moodle (this is part of your course grade). This will also help me focus the class.
+This is a rough schedule, subject to change. Unless otherwise noted, assignments are due at 10 p.m. on the day listed. The readings are not generally long, and I expect them to be done before class. To reinforce this, you are expected to post a question or comment (or answer to another question) from the reading prior to 8 am on moodle (this is part of your course grade). This will also help me focus the class.
 
 | Class # 	| Date           	| Topics             	| Assigned Reading                                                                                                                                                                                                                                           	| Assignment Due at 10 p.m. 	|
 |---------	|----------------	|--------------------	|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|---------------------------	|
