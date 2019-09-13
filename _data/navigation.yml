@@ -1,0 +1,7 @@
+main:
+  - title: "Home"
+    url: /
+  - title: "CS201 Schedule"
+    url: /CS201/Schedule
+  - title: "CS201 Syllabus"
+    url: /CS201/Syllabus
