@@ -1,11 +1,11 @@
 # Install Java and an IDE
 
 ## Install Java
-1. Go to the open jdk [https://jdk.java.net/12/](downloads page).
+1. Go to the open jdk [downloads page](https://jdk.java.net/12/).
 2. Download the appropriate file from the list.
-3. Follow instructions from [https://openjdk.java.net/install/](here) to unpack
+3. Follow instructions from [here](https://openjdk.java.net/install/) to unpack
 
-On mac, you can alternatively use [https://brew.sh/](homebrew) and [https://github.com/AdoptOpenJDK/homebrew-openjdk](adoptopenjdk).
+On mac, you can alternatively use [homebrew](https://brew.sh/) and [adoptopenjdk](https://github.com/AdoptOpenJDK/homebrew-openjdk).
 
 ## Install an IDE
 
@@ -17,5 +17,5 @@ On mac, you can alternatively use [https://brew.sh/](homebrew) and [https://gith
 4. Install it as you would any other application.
 
 ### Install IntelliJ
-1. Visit [https://www.jetbrains.com/idea/download/#section=mac](jetbrains.com)
+1. Visit [jetbrains.com](https://www.jetbrains.com/idea/download/#section=mac)
 2. Download and install COMMUNITY EDITION.
