@@ -38,7 +38,7 @@ For this program, read a matrix (array of array of ints) from a file, and return
 [Sample Input](https://github.com/svtuck/cs201/tree/master/text/lab1)
 
 ## Sieve
-For this program, we will implement the ('Sieve of Eratosthenes')[https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes]. We will do this using 'Sieve' objects, which take an integer as input and have functions that remove multiples of that number from an array. We will do two versions, one that takes an array as input and returns a NEW array with the elements removed, and another that modifies the passed in array without creating a new array. 
+For this program, we will implement the [(]'Sieve of Eratosthenes'](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes). We will do this using 'Sieve' objects, which take an integer as input and have functions that remove multiples of that number from an array. We will do two versions, one that takes an array as input and returns a NEW array with the elements removed, and another that modifies the passed in array without creating a new array. 
 
 * Input: an integer from the command line.
 * Output: the primes less than that number, first with the 'new array' version, and then the 'in place version' (which should be padded with zeros).
