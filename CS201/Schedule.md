@@ -2,7 +2,7 @@
 
 This is a rough schedule, subject to change. Unless otherwise noted, assignments are due at 10 p.m. on the day listed. The readings are not generally long, and I expect them to be done before class. To reinforce this, you are expected to post a question or comment (or answer to another question) from the reading prior to 8 am on moodle (this is part of your course grade). This will also help me focus the class.
 
-Notes can be found [here](CS201/notes). Code from class can be found [here](https://github.com/svtuck/cs201/tree/master/src).d
+Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master/CS201/notes). Code from class can be found [here](https://github.com/svtuck/cs201/tree/master/src).
 
 | Class # 	| Date           	| Topics             	| Assigned Reading                                                                                                                                                                                                                                           	| Assignment Due at 10 p.m. 	|
 |---------	|----------------	|--------------------	|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|---------------------------	|
