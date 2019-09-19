@@ -5,7 +5,7 @@ For this lab we are going to write five sample programs in Java. These are hoste
 Here is the order I suggest, but feel free to go in any order.
 
 ## Remove Vowels
-For this program, take a String as an argument and print that string with vowels removed. All lower case is fine.
+For this program, take a String as an argument and print that string with vowels removed. Assume the input is all lower cased.
 
 * Input: a string from the command line (perhaps multiple words with spaces).
 * Output: that string with vowels removed
@@ -13,7 +13,7 @@ For this program, take a String as an argument and print that string with vowels
 [RemoveVowels](https://github.com/svtuck/cs201/blob/master/src/lab1/RemoveVowels.java)
 
 ## Palindrome
-For this program, take a string as input as an argument and determine if that String is a palindrome.
+For this program, take a string as input as an argument and determine if that String is a palindrome. Assume the word is all lower cased.
 * Input: a string from the command line (perhaps multiple words with spaces).
 * Output: whether this is a palindome
 
@@ -22,6 +22,35 @@ For this program, take a string as input as an argument and determine if that St
 ## Stars
 For this program, take an integer *n* as input from the command line and build a pyramid of stars with *n* rows. *Hint* you will need to figure out how division of integers works.
 
+Example:
+
+
+      5
+      *
+      **
+      ***
+      **
+      *
+
+      9
+      *
+      **
+      ***
+      ****
+      *****
+      ****
+      ***
+      **
+      *
+
+      6
+      *
+      **
+      ***
+      ***
+      **
+      *
+      
 * Input: an integer from the command line.
 * Output: the star pyramid
 
@@ -37,13 +66,23 @@ For this program, read a matrix (array of array of ints) from a file, and return
 
 [Sample Input](https://github.com/svtuck/cs201/tree/master/text/lab1)
 
-## Sieve
-For this program, we will implement the [(]'Sieve of Eratosthenes'](https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes). We will do this using 'Sieve' objects, which take an integer as input and have functions that remove multiples of that number from an array. We will do two versions, one that takes an array as input and returns a NEW array with the elements removed, and another that modifies the passed in array without creating a new array. 
+## Remove Vowels 2
+For this program, we are going to again remove vowels. Instead of using a String, you are going to get an Arrray.
 
-* Input: an integer from the command line.
-* Output: the primes less than that number, first with the 'new array' version, and then the 'in place version' (which should be padded with zeros).
+### Part A
+	1. Read a String into an array of chars (char[])
+	2. Pass this array to removeVowels
+	3. Modify this array to remove all the vowels
 
-[Sieve](https://github.com/svtuck/cs201/blob/master/src/lab1/Sieve.java)
+
+
+### Part A
+	1. Read a String into an array of chars (char[])
+	2. Pass this array to removeVowels
+	3. Return a new (potentially smaller) array with vowels removed without modifying the original array
+
+[Part A](https://github.com/svtuck/cs201/blob/master/src/lab1/RemoveVowelsA.java)
+[Part B](https://github.com/svtuck/cs201/blob/master/src/lab1/RemoveVowelsB.java)
 
 # What to turn in
 Submit a zip of your programs on moodle.
