@@ -85,6 +85,8 @@ For this program, we are going to again remove vowels. Instead of using a String
 [Part B](https://github.com/svtuck/cs201/blob/master/src/lab1/RemoveVowelsB.java)
 
 # What to turn in
-Submit a zip of your programs on moodle.
+Submit a zip of your programs on moodle, include your name and your partner's name (only submit for one of you).
+
+Additionally (individually) fill out this [survey](https://forms.gle/2u6NGWebcbHdTt9x8).
 
 
