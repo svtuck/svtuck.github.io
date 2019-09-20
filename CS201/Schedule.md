@@ -9,7 +9,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 1 | Monday 9/16 | Class intro 	| | |
 | 2 | Wednesday 9/18 	| Intro to Java| [Java4Python](https://runestone.academy/runestone/books/published/java4python/index.html)  "Let's look at a Java Program" and "Data Types" through (and including) "String" - [Installing Java and IDE](java) | 	|
 | 3 | Friday 9/20| Intro to Java  | [Java4Python](https://runestone.academy/runestone/books/published/java4python/index.html)  "Conditionals", "Loops and iteration", "Defining Classes in Java" up to (and not including) "Abstract Classes"| [Python to Java Comparison](PythonToJava) |
-| 4 | Monday 9/23 | Bags (Chapter 1-2) 	|Chapter 1 (don't get bogged down in UML) -> 1.14 | [Java Lab](Assignments/Lab1/Intro) 	|
+| 4 | Monday 9/23 | Bags (Chapter 1-2) 	|Chapter 1 (don't get bogged down in UML) -> 1.14 | [Java Lab](Assignments/Lab1/Intro) and [Pair Survey](https://forms.gle/2u6NGWebcbHdTt9x8)	|
 | 5 | Wednesday 9/25 | Bags ctd, Generics in Java | Chapter 2.0 -> 2.12| Sticks part 1 | 
 | 6 | Friday 9/27 | Bags ctd, Exceptions in Java | Chapter 3.0 -> 3.9 | Sticks part 2 | 
 | 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | Sticks part 3 | 
