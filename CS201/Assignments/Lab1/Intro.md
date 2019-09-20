@@ -72,7 +72,7 @@ For this program, we are going to again remove vowels. Instead of using a String
 ### Part A
 	1. Read a String into an array of chars (char[])
 	2. Pass this array to removeVowels
-	3. Modify this array to remove all the vowels
+	3. Modify this array to remove all the vowels and shift non-vowels
 
 
 
