@@ -10,20 +10,20 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 2 | Wednesday 9/18 	| Intro to Java| [Java4Python](https://runestone.academy/runestone/books/published/java4python/index.html)  "Let's look at a Java Program" and "Data Types" through (and including) "String" - [Installing Java and IDE](java) | 	|
 | 3 | Friday 9/20| Intro to Java  | [Java4Python](https://runestone.academy/runestone/books/published/java4python/index.html)  "Conditionals", "Loops and iteration", "Defining Classes in Java" up to (and not including) "Abstract Classes"| [Python to Java Comparison](PythonToJava) |
 | 4 | Monday 9/23 | Bags (Chapter 1-2) 	|Chapter 1 (don't get bogged down in UML) -> 1.14 | [Java Lab](Assignments/Lab1/Intro) and [Pair Survey](https://forms.gle/2u6NGWebcbHdTt9x8)	|
-| 5 | Wednesday 9/25 | Bags ctd, Generics in Java | Chapter 2.0 -> 2.12| Sticks part 1 | 
-| 6 | Friday 9/27 | Bags ctd, Exceptions in Java | Chapter 3.0 -> 3.9 | Sticks part 2 | 
-| 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | Sticks part 3 | 
+| 5 | Wednesday 9/25 | Bags ctd, Generics in Java | Chapter 2.0 -> 2.12|  | 
+| 6 | Friday 9/27 | Bags ctd, Exceptions in Java | Chapter 3.0 -> 3.9 | [Sticks parts 1 and 2](Assignments/Sticks/sticks) | 
+| 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | [Sticks part 3](Assignments/Sticks/sticks) | 
 | 8 | Wednesday 10/2 | Stacks | Chapter 5.0 -> 5.4 | Complexity PSet | 
 | 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | Lisp Without Nested Parens | 
 | 10 | Monday 10/7 | Recursion | Chapter 9.0 -> 9.7 | Lisp With Nested Parens | 
 | 11 | Wednesday 10/9 | Exam 1 |  |  | 
 | 12 | Friday 10/11 | More Recursion | Chapter 9.7 -> 9.12 |  | 
-| 13 | Monday 10/14 | Lists and Iterators | Chapter 10.0 -> 10.10 | Morse Code part 1  |
-| 14 | Wednesday 10/16 | Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 | Morse code part 2   |
-| 15 | Friday 10/18 | Hashing | Chapter 22.0 -> 22.4 | PopRandom design doc   |
+| 13 | Monday 10/14 | Lists and Iterators | Chapter 10.0 -> 10.10 |   |
+| 14 | Wednesday 10/16 | Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 | Morse code part 1   |
+| 15 | Friday 10/18 | Hashing | Chapter 22.0 -> 22.4 |  Morse Code part 2  |
 | 16 | Monday 10/21 | Break |  |    |
-| 17 | Wednesday 10/23 | Hashing | Chapter 23.0 -> 23.6 |  PopRandom implementation  |
-| 18 | Friday 10/25 | IMDB Lab | Read Hashing Assignment |   |
+| 17 | Wednesday 10/23 | Hashing | Chapter 23.0 -> 23.6 |  PopRandom design doc  |
+| 18 | Friday 10/25 | (Aside: tricks for interviews) IMDB Lab | Read Hashing Assignment | PopRandom implementation  |
 | 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing Part 1   |
 | 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 | IMDB Hashing Part 2   |
 | 21 | Friday 11/1 | Exam 2 |  |   |
