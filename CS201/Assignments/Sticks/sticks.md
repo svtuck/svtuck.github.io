@@ -122,7 +122,7 @@ One of the purposes of this assignment is to practice inheritance, and to see ho
 
 [Player and SticksGame](https://github.com/svtuck/cs201/tree/master/src/sticks)
 
-To complete this assignment, you will need to make two new classes, Human and AI, each of which implements the Player interface. You will also need to fill in the details for the method playGameOnce, which you'll find in the SticksGame class. You may not make any changes to the main method, or to the Player interface. To test your code, we will use our main method, and our Player interface, with the code that you submit.
+To complete this assignment, you will need to make two new classes, Human and AI, each of which implements the Player interface. You will also need to fill in the details for the method playGameOnce, which you'll find in the SticksGame class. You may not make any changes to the main method, or to the Player interface. To test your code, we will use our main method, and our Player interface, with the code that you submit. 
 
 # Part two: Human vs Learning AI
 ## Overview
