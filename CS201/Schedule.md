@@ -13,7 +13,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 5 | Wednesday 9/25 | Bags ctd, Generics in Java | Chapter 2.0 -> 2.12|  | 
 | 6 | Friday 9/27 | Bags ctd, Exceptions in Java | Chapter 3.0 -> 3.9 | [Sticks parts 1 and 2](Assignments/Sticks/sticks) | 
 | 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | [Sticks part 3](Assignments/Sticks/sticks) | 
-| 8 | Wednesday 10/2 | Stacks | Chapter 5.0 -> 5.4 | Complexity PSet | 
+| 8 | Wednesday 10/2 | Stacks | Chapter 5.0 -> 5.4 | [Complexity PSet](Assignements/Complexity/Complexity) | 
 | 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | Lisp Without Nested Parens | 
 | 10 | Monday 10/7 | Recursion | Chapter 9.0 -> 9.7 | Lisp With Nested Parens | 
 | 11 | Wednesday 10/9 | Exam 1 |  |  | 
