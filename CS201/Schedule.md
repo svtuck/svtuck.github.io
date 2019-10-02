@@ -14,7 +14,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 6 | Friday 9/27 | Bags ctd, Exceptions in Java | Chapter 3.0 -> 3.9 | [Sticks parts 1 and 2](Assignments/Sticks/sticks) | 
 | 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | [Sticks part 3](Assignments/Sticks/sticks) | 
 | 8 | Wednesday 10/2 | Stacks | Chapter 5.0 -> 5.4 | [Complexity PSet](Assignments/Complexity/Complexity.md) | 
-| 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | [Lisp Without Nested Parentheses](Assignments/Lisp.md) | 
+| 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | Due Sunday at 10 [Lisp Without Nested Parentheses](Assignments/Lisp.md) | 
 | 10 | Monday 10/7 | Recursion | Chapter 9.0 -> 9.7 | [Lisp With Nested Parentheses](Assignments/Lisp.md) | 
 | 11 | Wednesday 10/9 | [Exam 1](Exam1.md) |  |  | 
 | 12 | Friday 10/11 | More Recursion | Chapter 9.7 -> 9.12 |  | 
