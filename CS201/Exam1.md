@@ -11,8 +11,9 @@ Anything from the first three weeks is fair game (non-exhaustive):
 - Big Oh (The main classes: O(1), O(log(n)), O(n) ... O(n!) and their orders, formal definitions and choose an C and k)
 - Stacks
 - Queues
-- 
- ## What we won't cover
+
+
+## What we won't cover
 - Recursion (next week)
 - Reading files
 - Reading from the command line
