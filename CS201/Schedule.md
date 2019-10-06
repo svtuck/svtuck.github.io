@@ -15,15 +15,15 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 7 | Monday 9/30 | Effeciency and Complexity | Chapter 4.0 -> 4.10 | [Sticks part 3](Assignments/Sticks/sticks) | 
 | 8 | Wednesday 10/2 | Stacks | Chapter 5.0 -> 5.4 | [Complexity PSet](Assignments/Complexity/Complexity.md) | 
 | 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | Due Sunday at 10 [Lisp Without Nested Parentheses](Assignments/Lisp.md) | 
-| 10 | Monday 10/7 | Recursion | Chapter 9.0 -> 9.7 | [Lisp With Nested Parentheses](Assignments/Lisp.md) | 
+| 10 | Monday 10/7 | Taking a breath | No reading (was: Chapter 9) | [Lisp With Nested Parentheses](Assignments/Lisp.md) | 
 | 11 | Wednesday 10/9 | [Exam 1](Exam1.md) |  |  | 
-| 12 | Friday 10/11 | More Recursion | Chapter 9.7 -> 9.12 |  | 
-| 13 | Monday 10/14 | Lists and Iterators | Chapter 10.0 -> 10.10 |   |
-| 14 | Wednesday 10/16 | Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 | Morse code part 1   |
-| 15 | Friday 10/18 | Hashing | Chapter 22.0 -> 22.4 |  Morse Code part 2  |
+| 12 | Friday 10/11 | Lists and Iterators Recursion | Chapter 10.0 -> 10.10  |  | 
+| 13 | Monday 10/14 | Recursion | Chapter 9.0 -> 9.7 |   |
+| 14 | Wednesday 10/16 | More Recursion | Chapter 9.7 -> 9.12 | Morse code part 1   |
+| 15 | Friday 10/18 |  Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 |  Morse Code part 2  |
 | 16 | Monday 10/21 | Break |  |    |
-| 17 | Wednesday 10/23 | Hashing | Chapter 23.0 -> 23.6 |  PopRandom design doc  |
-| 18 | Friday 10/25 | (Aside: tricks for interviews) IMDB Lab | Read Hashing Assignment | PopRandom implementation  |
+| 17 | Wednesday 10/23 | Hashing | Chapter 22.0 -> 22.4 |  PopRandom design doc  |
+| 18 | Friday 10/25 | Hashing (Aside: tricks for interviews) / (IMDB Lab?) | Chapter 23.0 -> 23.6 | PopRandom implementation  |
 | 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing Part 1   |
 | 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 | IMDB Hashing Part 2   |
 | 21 | Friday 11/1 | Exam 2 |  |   |
