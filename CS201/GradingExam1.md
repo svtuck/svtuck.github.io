@@ -14,7 +14,7 @@ See question 4 to adjust your score.
 
 ## Question 4
 - If you believe I was wrong, please come have a private conversation about your reasoning
-- I was not happy with the size of this question. Big O was over representned on the test, and switching between tight bounds for Big O when looking at code and loose ones for definitions threw people off. In light of this, divide your score on Q4 by 3 and round it for your adjusted score. The adjusted test is then out of 36.
+- I was not happy with the size of this question. Big O was over representned on the test, and switching between tight bounds for Big O when looking at code and loose ones for definitions threw people off. In light of this, divide your score on Q4 by 3 and round it for your adjusted score. The adjusted test is then out of 37.
 
 ## Question 5
 - Part 1: primitive assignments, data is copied
