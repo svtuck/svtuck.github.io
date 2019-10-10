@@ -17,7 +17,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 9 | Friday 10/4 | Queues | Chapter 7.0 -> 7.4 | Due Sunday at 10 [Lisp Without Nested Parentheses](Assignments/Lisp.md) | 
 | 10 | Monday 10/7 | Taking a breath | No reading (was: Chapter 9) | [Lisp With Nested Parentheses](Assignments/Lisp.md) | 
 | 11 | Wednesday 10/9 | [Exam 1](Exam1.md) |  |  | 
-| 12 | Friday 10/11 | Lists and Iterators | Chapter 10.0 -> 10.10  | [Exam 1 back](Exam1Grading.md) | 
+| 12 | Friday 10/11 | Lists and Iterators | Chapter 10.0 -> 10.10  | [Exam 1 back](GradingExam1.md) | 
 | 13 | Monday 10/14 | Recursion | Chapter 9.0 -> 9.7 |   |
 | 14 | Wednesday 10/16 | More Recursion | Chapter 9.7 -> 9.12 | Morse code part 1   |
 | 15 | Friday 10/18 |  Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 |  Morse Code part 2  |
