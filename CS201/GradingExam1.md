@@ -14,7 +14,7 @@ See question 4 to adjust your score.
 
 ## Question 4
 - If you believe I was wrong, please come have a private conversation about your reasoning
-- I was not happy with the size of this question. Big O was over representned on the test, and switching between tight bounds for Big O when looking at code and loose ones for definitions threw people off. In light of this, divide your score on Q4 by 3 and round it for your adjusted score. The adjusted test is then out of 37.
+- I was not happy with the size of this question. Big O was over represented on the test, and switching between tight bounds for Big O when looking at code and loose ones for definitions threw people off. In light of this, divide your score on Q4 by 3 and round it for your adjusted score. The adjusted test is then out of 37.
 
 ## Question 5
 - Part 1: primitive assignments, data is copied
@@ -32,11 +32,11 @@ See question 4 to adjust your score.
 
 ## Score breakdown by adjusted scores
 
-- >=34 A: 8 exams - This left room to miss things like copying head.count, being slightly inefficient in implementations and being imprecise on early questions
-- >=31 A-: 15 
-- >=29 B+: 12 
-- >=27 B: 8  - This allowed some significant errors in either Bag or Stack question, plus some confusion on Big O.
-- >=24 B-: 7
+- ≥ 34 A: 8 exams - This left room to miss things like copying head.count, being slightly inefficient in implementations and being imprecise on early questions
+- ≥ 31 A-: 15 
+- ≥29 B+: 12 
+- ≥27 B: 8  - This allowed some significant errors in either Bag or Stack question, plus some confusion on Big O.
+- ≥24 B-: 7
 - 16-23 C-/C/C+ - This was generally partial credit on the large questions and errors on Big O.
 - < 16 : < C-
 
