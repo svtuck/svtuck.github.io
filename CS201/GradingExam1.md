@@ -46,4 +46,4 @@ See question 4 to adjust your score.
 Writing code in class under time constraints is difficult. If you feel like your grade does not reflect your handle on the material, I am making a makeup available in two forms, both of which will be "soft" adjustements. This means they will be qualitative data for me as I'm assigning grades, and may bump you from one grade into another.
 
 1. You may set up time with me to talk through your exam 1:1. Explain what you are thinking and code on the whiteboard. 
-2. You may take a new open book, open notes takehome exam. This is due Monday at 10 p.m.
+2. You may take a new open book, open notes takehome exam. This is due Monday at 10 p.m. [Link here](https://github.com/svtuck/svtuck.github.io/blob/master/CS201/exam1_takehome.pdf).
