@@ -23,16 +23,16 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 15 | Friday 10/18 |  Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 |    |
 | 16 | Monday 10/21 | Break |  |    |
 | 17 | Wednesday 10/23 | Hashing | Chapter 22.0 -> 22.4 |  [Recursion Lab](Assignments/RecursionLab.md) |
-| 18 | Friday 10/25 | Hashing (Aside: tricks for interviews) / (IMDB Lab?) | Chapter 23.0 -> 23.6 | PopRandom implementation  |
-| 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing Part 1   |
-| 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 | IMDB Hashing Part 2   |
-| 21 | Friday 11/1 | Exam 2 |  |   |
-| 22 | Monday 11/4 | Heaps | 24.32 -> 24.34 |   |
-| 23 | Wednesday 11/6 | Heaps | 27.0 -> 27.4 |  IMDB Trees Part 1 |
-| 24 | Friday 11/8 | Balanced Search Trees | 27.0 -> 27.4 |  IMDB Trees Part 2 |
-| 25 | Monday 11/11 | Sorting | Chapter 15 (Long and some may be familiar from intro, feel free to skim) |   |
-| 26 | Wednesday 11/13 | Sorting | Chapter 16 (Long feel free to skim) |   |
-| 27 | Friday 11/15 | Graphs | 29.0 -> 29.13 |  Sorting and Balanced Tree PSet |
-| 28 | Monday 11/18 | More Graphs | 30 -> 30.9 |   |
-| 29 | Wednesday 11/20 | Distributed Data Structures (if we have time) | https://en.wikipedia.org/wiki/Distributed_hash_table | Unit Conversions  |
+| 18 | Friday 10/25 | Hashing (Aside: tricks for interviews) / (IMDB Lab?) | Chapter 23.0 -> 23.6 |   |
+| 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing  |
+| 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 |   |
+| 21 | Friday 11/1 |Balanced Search Trees | 27.0 -> 27.4 | Balanced Tree PSet (Sunday at 10pm)| 
+| 22 | Monday 11/4 | Exam 2 |  |    |
+| 23 | Wednesday 11/6 | Heaps | 24.32 -> 24.34 |   |
+| 24 | Friday 11/8 | Sorting | Chapter 15 (Long and some may be familiar from intro, feel free to skim) | Deck of Cards Design Document (Sunday at 10pm) |
+| 25 | Monday 11/11 | Sorting|  Chapter 16 (Long feel free to skim)|   |
+| 26 | Wednesday 11/13 | Graphs | 29.0 -> 29.13 | Sorting PSet   |
+| 27 | Friday 11/15 | More Graphs | 30 -> 30.9 |   |
+| 28 | Monday 11/18 | Course Wrap Up |  |   |
+| 29 | Wednesday 11/20 | Exam 3 | | Final Project (due end of finals period)  |
 
