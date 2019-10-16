@@ -56,7 +56,7 @@ inside = null
 
 rear = null
 
-###To represent a queue with only two items in it:
+### To represent a queue with only two items in it:
 
 front = item
 
@@ -64,7 +64,7 @@ inside = null
 
 rear = item
 
-###To represent a queue with three or more items in it:
+### To represent a queue with three or more items in it:
 
 front = item
 
