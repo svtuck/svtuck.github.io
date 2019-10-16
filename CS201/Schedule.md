@@ -19,10 +19,10 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 11 | Wednesday 10/9 | [Exam 1](Exam1.md) |  |  | 
 | 12 | Friday 10/11 | Lists and Iterators | Chapter 10.0 -> 10.10  | [Exam 1 back](GradingExam1.md) | 
 | 13 | Monday 10/14 | Recursion | Chapter 9.0 -> 9.7 |   |
-| 14 | Wednesday 10/16 | More Recursion | Chapter 9.7 -> 9.12 | Morse code part 1   |
-| 15 | Friday 10/18 |  Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 |  Morse Code part 2  |
+| 14 | Wednesday 10/16 | More Recursion | Chapter 9.7 -> 9.12 |  |
+| 15 | Friday 10/18 |  Mutable Objects, Inheritance, Dictionaries | Chapter 20.0 -> 20.6 |    |
 | 16 | Monday 10/21 | Break |  |    |
-| 17 | Wednesday 10/23 | Hashing | Chapter 22.0 -> 22.4 |  PopRandom design doc  |
+| 17 | Wednesday 10/23 | Hashing | Chapter 22.0 -> 22.4 |  [Recursion Lab](Assignments/RecursionLab.md) |
 | 18 | Friday 10/25 | Hashing (Aside: tricks for interviews) / (IMDB Lab?) | Chapter 23.0 -> 23.6 | PopRandom implementation  |
 | 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing Part 1   |
 | 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 | IMDB Hashing Part 2   |
