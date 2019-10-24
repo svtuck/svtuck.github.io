@@ -24,7 +24,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 16 | Monday 10/21 | Break |  |    |
 | 17 | Wednesday 10/23 | Hashing | Chapter 22.0 -> 22.4 |  [Recursion Lab](Assignments/RecursionLab.md) |
 | 18 | Friday 10/25 | Hashing (Aside: tricks for interviews) / (IMDB Lab?) | Chapter 23.0 -> 23.6 |   |
-| 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 | IMDB Hashing  |
+| 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 |  |
 | 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 |   |
 | 21 | Friday 11/1 |Balanced Search Trees | 27.0 -> 27.4 | Balanced Tree PSet (Sunday at 10pm)| 
 | 22 | Monday 11/4 | Exam 2 |  |    |
