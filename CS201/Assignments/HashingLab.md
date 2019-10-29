@@ -4,6 +4,12 @@ In this lab we are building a Reservation System. It has two components, a "look
 
 The lookup table uses hashing and the scheduling is done with a binary search tree. Just like in class, the scheduling has a constraint: reservations last an hour and we should not add a reservation unless it does not overlap with existing reservations (this uses the time as a key). We should also be able to look up by name (the hash map uses the name as the key).
 
+[Here is the package containing the code.](https://github.com/svtuck/cs201/tree/master/src/reservation)
+
+The main method is in ReservationSystem.java. I have tried to give you approximately how many lines of code you need to add. If you find yourself adding significantly fewer or more lines of code, then you may be off track.
+
+
+
 ## Finding the first available appointment
 
 The first piece of functionality we want is to find the first available appointment after a certain time. To do this, implement findPredecessor(t), which will the return the closest appointment with a start time less than t (use findSuccessor as a template). The first available appointment is then either t, the end time of the predecessor (if this end time is greater than t) or the first available appointment after the successor (if t is too close to the start time of the successor). Draw out how this works on a piece of paper first (you do not need to hand the drawing in).
