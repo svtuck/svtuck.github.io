@@ -24,7 +24,7 @@ Approximate lines of code added: ~3 to ReservationIndexedToStringVisitor
 
 ## Measure Hash Performance
 
-In the ReservationSystem class, there is a function called "runExperiment". This will output data that relates load factor to the number of probes needed to do an insert. Run this function with 1022 additions and 10 trials to generate the data. Copy this data to Google Sheets or Excel. Add a column that contains the average of all trials (use =AVERAGE() and select your data, then copy and paste this for all rows). Create a chart that shows the relationship between load factor and the average number of probes required. Finally, calculate the average of the TOTAL number of probes done to add 1022 items to the hashmap (sum the probes for each trial, and then average this number).
+In the ReservationSystem class, there is a function called "runExperiment". This will output data that relates load factor to the number of probes needed to do an insert. Run this function with 1022 additions and 10 trials to generate the data. Copy this data to Google Sheets or Excel. Add a column that contains the average of all trials (use =AVERAGE() and select your data, then copy and paste this for all rows). Create a chart that shows the relationship between load factor and the average number of probes required for a put() operation at that load factor. Finally, calculate the average of the TOTAL number of probes done to add 1022 items to the hashmap (sum the probes for each trial, and then average this number).
 
 I have a created a starter spreadsheet that you can expand [here](https://docs.google.com/spreadsheets/d/1QKtcSG4rJ0SrquyWmYWI1G7cM97loGPm1veezdAL4sg/edit?usp=sharing).
 
@@ -42,7 +42,7 @@ Finally, we want to be able to expand the lookup table when we get above our loa
 
 Rerun runExperiment() and copy the data to Excel or Google Sheets. Calculate the average of the TOTAL number of probes done to add 1022 items to the hashmap using quadratic hashing and resizing (sum the probes for each trial, and then average this number).
 
-Modify the ReservationHashMap to begin with an array of size 4. Run runExperiment with numAdditions = 10000 and numtrials = 10 for maximum load factors of .5, .75 and .99. Create a chart that shows the average cost of adding n items. How does load factor impact the expected cost? How does the number of items in the table impact the expected cost?
+Modify the ReservationHashMap to begin with an array of size 4. Run runExperiment with numAdditions = 10000 and numtrials = 10 for maximum load factors of .5, .75 and .99. Create a chart that shows the average cost of adding n items (the total cost of adding n items divided by n). How does load factor impact the expected cost? How does the number of items in the table impact the expected cost?
 
 Approximate lines of code added: ~5 to ReservationHashMap.
 
