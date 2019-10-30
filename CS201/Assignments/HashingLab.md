@@ -12,9 +12,9 @@ The main method is in ReservationSystem.java. I have tried to give you approxima
 
 ## Finding the first available appointment
 
-The first piece of functionality we want is to find the first available appointment after a certain time. To do this, implement findPredecessor(t), which will the return the closest appointment with a start time less than t (use findSuccessor as a template). The first available appointment is then either t, the end time of the predecessor (if this end time is greater than t) or the first available appointment after the successor (if t is too close to the start time of the successor). Draw out how this works on a piece of paper first (you do not need to hand the drawing in).
+The first piece of functionality we want is to find the first available appointment after a certain time. To do this, implement findPredecessor(t), which will the return the closest appointment with a start time less than t (use findSuccessor as a template). The first available appointment is then either t, the end time of the predecessor (if this end time is greater than t) or the first available appointment after the successor (if t is too close to the start time of the successor, you will need to add code to ReservationSystem to do this part). Draw out how this works on a piece of paper first (you do not need to hand the drawing in).
 
-Approximate lines of code added: ~15 for findPredecessor, 1 in [ReservationSystem](https://github.com/svtuck/cs201/blob/master/src/reservation/ReservationSystem.java#L115)
+Approximate lines of code added: ~15 for findPredecessor() in ReservationBinarySearchTree and 1 in [ReservationSystem](https://github.com/svtuck/cs201/blob/master/src/reservation/ReservationSystem.java#L115)
 
 ## Display with the "index" of each node
 
@@ -27,6 +27,8 @@ Approximate lines of code added: ~3 to ReservationIndexedToStringVisitor
 In the ReservationSystem class, there is a function called "runExperiment". This will output data that relates load factor to the number of probes needed to do an insert. Run this function with 1022 additions and 10 trials to generate the data. Copy this data to Google Sheets or Excel. Add a column that contains the average of all trials (use =AVERAGE() and select your data, then copy and paste this for all rows). Create a chart that shows the relationship between load factor and the average number of probes required for a put() operation at that load factor. Finally, calculate the average of the TOTAL number of probes done to add 1022 items to the hashmap (sum the probes for each trial, and then average this number).
 
 I have a created a starter spreadsheet that you can expand [here](https://docs.google.com/spreadsheets/d/1QKtcSG4rJ0SrquyWmYWI1G7cM97loGPm1veezdAL4sg/edit?usp=sharing).
+
+To copy data into google sheets, copy the data and paste at row 1. There will be a small box that shows up towards the bottom of the screen. Click on it and select the option to split rows. If you are using JGrasp, you then need to search and replace for the extra characters added.
 
 No extra code added.
 
