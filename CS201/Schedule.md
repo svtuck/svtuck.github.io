@@ -27,7 +27,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 19 | Monday 10/28 | Trees | Chapter 24.0 -> 24.11 |  |
 | 20 | Wednesday 10/30 | Cloning and Binary Search Trees | Chapter 25.0 -> 25.3 |  [Lab](Assignments/HashingLab.md) (Sunday at 10pm, graded on completion of all parts) |
 | 21 | Friday 11/1 |Balanced Search Trees | 27.0 -> 27.4 | Balanced Tree PSet (Sunday at 10pm)| 
-| 22 | Monday 11/4 | Exam 2 |  |    |
+| 22 | Monday 11/4 | [Exam 2](Exam2.md) |  |    |
 | 23 | Wednesday 11/6 | Heaps | 24.32 -> 24.34 |   |
 | 24 | Friday 11/8 | Sorting | Chapter 15 (Long and some may be familiar from intro, feel free to skim) | Deck of Cards Design Document (Sunday at 10pm) |
 | 25 | Monday 11/11 | Sorting|  Chapter 16 (Long feel free to skim)|   |
