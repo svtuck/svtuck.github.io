@@ -29,7 +29,7 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 21 | Friday 11/1 |Balanced Search Trees | 27.0 -> 27.4 | [Balanced Tree PSet (Sunday at 10pm)](AVL.md)| 
 | 22 | Monday 11/4 | [Exam 2](Exam2.md) |  |    |
 | 23 | Wednesday 11/6 | Heaps | 24.32 -> 24.34 |   |
-| 24 | Friday 11/8 | Sorting | Chapter 15 (Long and some may be familiar from intro, feel free to skim) | Deck of Cards Design Document (Sunday at 10pm) |
+| 24 | Friday 11/8 | Sorting | Chapter 15 (Long and some may be familiar from intro, feel free to skim) | [Heaps](Assignments/Heap.md) (Sunday at 10pm) |
 | 25 | Monday 11/11 | Sorting|  Chapter 16 (Long feel free to skim)|   |
 | 26 | Wednesday 11/13 | Graphs | 29.0 -> 29.13 | Sorting PSet   |
 | 27 | Friday 11/15 | More Graphs | 30 -> 30.9 |   |

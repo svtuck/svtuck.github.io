@@ -12,7 +12,7 @@ The main method is in ReservationSystem.java. I have tried to give you approxima
 
 ## Finding the first available appointment
 
-The first piece of functionality we want is to find the first available appointment after a certain time. To do this, implement findPredecessor(t), which will the return the closest appointment with a start time less than t (use findSuccessor as a template). The first available appointment is then either t, the end time of the predecessor (if this end time is greater than t) or the first available appointment after the successor (if t is too close to the start time of the successor, you will need to add code to ReservationSystem to do this part). Draw out how this works on a piece of paper first (you do not need to hand the drawing in).
+The first piece of functionality we want is to find the first available appointment after a certain time. To do this, implement findPredecessor(t), which will the return the closest appointment with a start time less than t (use findSuccessor as a template). The first available appointment is then either t, the end time of the predecessor (if this end time is greater than t) or the first available appointment after the successor (if t is too close to the start time of the successor, you will need to add code to ReservationSystem to do this part). **Draw out how this works on a piece of paper first (you do not need to hand the drawing in, but you should have the drawing).**
 
 Approximate lines of code added: ~15 for findPredecessor() in ReservationBinarySearchTree and 1 in [ReservationSystem](https://github.com/svtuck/cs201/blob/master/src/reservation/ReservationSystem.java#L115)
 
