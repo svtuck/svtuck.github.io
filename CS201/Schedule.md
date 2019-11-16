@@ -34,5 +34,5 @@ Notes can be found [here](https://github.com/svtuck/svtuck.github.io/tree/master
 | 26 | Wednesday 11/13 | Graphs | 29.0 -> 29.13 | [Sorting PSet](Assignments/Sorting.md)   |
 | 27 | Friday 11/15 | More Graphs | 30 -> 30.9 |   |
 | 28 | Monday 11/18 | Course Wrap Up |  |   |
-| 29 | Wednesday 11/20 | Exam 3 | | [Final Project (due end of finals period)](Assignments/changelings.md)  |
+| 29 | Wednesday 11/20 | [Exam 3](Assignments/Exam3.md) | | [Final Project (due end of finals period)](Assignments/changelings.md)  |
 
