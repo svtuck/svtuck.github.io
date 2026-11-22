@@ -198,7 +198,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
         <p class="feedback" id="feedback" role="status"></p>
         <div class="controls-row">
           <button type="button" id="next">Skip</button>
-          <button type="button" id="retry" hidden>Retry</button>
+          <button type="button" id="reset" hidden>Reset</button>
           <button type="button" id="hintBtn" hidden>Hint</button>
           <button type="button" id="solBack" hidden>Back</button>
           <button type="button" id="solution" hidden>Show solution</button>
@@ -218,7 +218,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
           <div><div class="big" id="myRating">1000</div><div class="lbl">puzzle rating</div></div>
           <div><div class="big" id="myCount">0</div><div class="lbl">attempted</div></div>
           <div><div class="big" id="myStreak">0</div><div class="lbl">streak</div></div>
-          <button type="button" id="reset">Reset rating</button>
+          <button type="button" id="resetRating">Reset rating</button>
         </div>
         <ol class="hist" id="hist"></ol>
       </div>
@@ -623,7 +623,7 @@ let profile = { rating: 1000, n: 0, streak: 0, history: [] };
 try { const raw = localStorage.getItem(ME_KEY); if (raw) profile = Object.assign(profile, JSON.parse(raw)); } catch (e) {}
 function saveProfile() { try { localStorage.setItem(ME_KEY, JSON.stringify(profile)); } catch (e) {} }
 
-let hintFaces = null, hintUsed = false;
+let hintFaces = null, hintUsed = false, rated = false;
 let G = newState(), pending = -1, pendingTwist = null, busy = false, hoverSlot = -1, highlightFace = null;
 const INV = PERM.map((p) => { const q = new Array(54); p.forEach((j, i) => (q[j] = i)); return q; });
 const aiThinking = false;
@@ -651,6 +651,7 @@ function pickPuzzle() {
   if (!pool.length) pool = DATA.puzzles;
   const target = profile.rating + (Math.random() * 300 - 150);
   pool.sort((a, b) => Math.abs(a.rating - target) - Math.abs(b.rating - target));
+  rated = false;
   loadPuzzle(pool[Math.floor(Math.random() * Math.min(6, pool.length))]);
 }
 
@@ -706,11 +707,21 @@ function showHint() {
   feedback(hintFaces.size === 1 ? "Hint: one face is lit. The mark goes on it and it is the face to turn." : "Hint: two faces are lit. The mark goes on one of them; the other is the face to turn.", "");
   render();
 }
+function resetPuzzle() {
+  if (!P || busy || opponentBusy) return;
+  if (result === "viewing" && solSeq) { releaseLayer(); solK = 0; G = solStates[0]; pending = -1; feedback(solText(), ""); render(); return; }
+  const keepHint = hintUsed;
+  loadPuzzle(P); hintUsed = keepHint;
+  feedback(rated ? "Back to the start. Practice attempt: your rating will not change." : "Back to the start position.", "");
+  render();
+}
 function winningMovesNow(cells, side) { const w = []; scanMoves(cells, side, side, (slot, t, out) => { if (out === 1) w.push(slot * 12 + t); }); return w; }
 function finish(ok, msg) {
   result = ok ? "solved" : "failed";
   const exp = 1 / (1 + Math.pow(10, (P.rating - profile.rating) / 400));
   const K = profile.n < 20 ? 48 : 24;
+  if (rated) { feedback(msg + "  Practice attempt, rating unchanged.", ok ? "good solved" : "bad"); render(); return; }
+  rated = true;
   const delta = ok && hintUsed ? 0 : Math.round(K * ((ok ? 1 : 0) - exp));
   profile.rating += delta; profile.n++; profile.streak = ok ? profile.streak + 1 : 0;
   profile.history.unshift({ id: P.id, ok, rating: P.rating, delta }); profile.history = profile.history.slice(0, 200);
@@ -803,7 +814,7 @@ function buildDom() {
   });
   bindNetSlide();
   $("next").addEventListener("click", pickPuzzle);
-  $("retry").addEventListener("click", () => { if (P && !busy && !opponentBusy) { loadPuzzle(P); result = null; render(); } });
+  $("reset").addEventListener("click", resetPuzzle);
   $("solution").addEventListener("click", () => {
     if (!P || busy || opponentBusy) return;
     if (!result) finish(false, "Solution viewed, counted as a miss.");
@@ -811,9 +822,9 @@ function buildDom() {
   });
   $("hintBtn").addEventListener("click", showHint);
   $("solBack").addEventListener("click", () => solutionStep(-1));
-  $("reset").addEventListener("click", () => {
-    if ($("reset").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
-    else { $("reset").dataset.armed = "1"; $("reset").textContent = "Click again to reset"; }
+  $("resetRating").addEventListener("click", () => {
+    if ($("resetRating").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("resetRating").dataset.armed; $("resetRating").textContent = "Reset rating"; render(); }
+    else { $("resetRating").dataset.armed = "1"; $("resetRating").textContent = "Click again to reset"; }
   });
   $("hint").textContent = "Drag a row to twist · drag the background to orbit";
   document.addEventListener("keydown", (e) => {
@@ -865,7 +876,8 @@ function render() {
     pendingTwist !== null ? "Twisted " + FACES[TWISTS[pendingTwist].face].name + ". Now place your mark, or turn it back to undo." :
     pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
     "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.";
-  $("retry").hidden = !(result === "failed" || result === "viewing");
+  const dirty = pending >= 0 || pendingTwist !== null || step > 0 || !!result || (result === "viewing" && solK > 0);
+  $("reset").hidden = !P || !dirty || (result === "viewing" && (!solSeq || solK === 0)); $("reset").disabled = busy || opponentBusy;
   $("solution").hidden = !P || !(!result || result === "failed" || (result === "viewing" && solSeq));
   $("hintBtn").hidden = !P || !!result; $("hintBtn").disabled = busy || opponentBusy;
   $("solution").textContent = result === "viewing" && solSeq ? (solK < solSeq.length ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "End of solution") : "Show solution";
