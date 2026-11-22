@@ -128,7 +128,8 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
 .cell.win { background: var(--win); color: #1a1e26; }
 .cell.pending { box-shadow: inset 0 0 0 2px currentColor; }
 .cell[data-label]:empty::after { content: attr(data-label); font: 500 calc(var(--cs) * .42)/1 var(--font-mono); color: var(--muted); opacity: .75; }
-.cell:disabled { opacity: 1; cursor: default; }
+.cell:disabled, .cell.off { opacity: 1; cursor: default; }
+.net { touch-action: none; user-select: none; -webkit-user-select: none; }
 .net-caption { margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
 
 /* Face turn pads */
@@ -503,6 +504,56 @@ function setupSlide(drag, dx, dy) {
   highlightFace = face; renderStickers(); renderNet();
   return true;
 }
+// Net slide: a drag along a row or column of a net face. On the net, screen-right is the face's r axis and
+// screen-down its d axis, so the drag maps to a 3D direction and the same rule as on the cube picks the face.
+function setupNetSlide(nd, dx, dy, cellPx) {
+  const sl = SLOTS[nd.slot], F = FACES[sl.face], horiz = Math.abs(dx) >= Math.abs(dy);
+  const sg = horiz ? Math.sign(dx) : Math.sign(dy), d = V.mul(horiz ? F.r : F.d, sg), A = V.cross(sl.n, d);
+  const layerSide = V.dot(sl.p, A);
+  if (layerSide === 0) return false;
+  const face = FACE_BY_NORMAL[V.mul(A, layerSide).map((x) => (x === 0 ? 0 : x)).join(",")];
+  if (!face) return false;
+  Object.assign(nd, { face, ux: horiz ? sg : 0, uy: horiz ? 0 : sg, sign: layerSide, ppq: cellPx * 2.6, ang: 0 });
+  if (!layer || layer.face !== face) grabLayer(face);
+  highlightFace = face; renderStickers(); renderNet();
+  return true;
+}
+function bindNetSlide() {
+  const net = $("net"); let nd = null, swallow = false;
+  net.addEventListener("pointerdown", (e) => {
+    swallow = false;
+    const cell = e.target.closest(".cell");
+    if (!cell || !canAct() || reduceMotion) return;
+    nd = { slot: +cell.id.slice(5), sx: e.clientX, sy: e.clientY, mode: "maybe", px: cell.getBoundingClientRect().width };
+  });
+  net.addEventListener("pointermove", (e) => {
+    if (!nd) return;
+    const dx = e.clientX - nd.sx, dy = e.clientY - nd.sy;
+    if (nd.mode === "maybe" && Math.hypot(dx, dy) > 8) {
+      nd.mode = setupNetSlide(nd, dx, dy, nd.px) ? "slide" : "none";
+      if (nd.mode === "slide") { try { net.setPointerCapture(e.pointerId); } catch (err) {} setHover(-1); }
+    }
+    if (nd.mode !== "slide") return;
+    e.preventDefault();
+    const t = Math.max(-1, Math.min(1, (dx * nd.ux + dy * nd.uy) / nd.ppq));
+    nd.ang = t * Math.PI / 2 * nd.sign;
+    if (layer && !layer.commit) { layer.angle = layer.target = nd.ang; pivot.quaternion.setFromAxisAngle(layer.axis, nd.ang); }
+  });
+  const end = (e) => {
+    if (!nd) return;
+    const d = nd; nd = null;
+    if (d.mode === "maybe") return;           // a tap: let the click place the mark
+    swallow = true;
+    if (d.mode === "slide") {
+      highlightFace = null;
+      if (Math.abs(d.ang) > Math.PI / 8 && e.type !== "pointercancel") chooseTwist(d.face, d.ang > 0 ? "ccw" : "cw");
+      else { clearPreview(); renderStickers(); renderNet(); }
+    }
+  };
+  net.addEventListener("pointerup", end);
+  net.addEventListener("pointercancel", end);
+  net.addEventListener("click", (e) => { if (swallow) { swallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
+}
 function bindPointer() {
   let drag = null;
   const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion();
@@ -720,6 +771,7 @@ function buildDom() {
     }
     wrap.append(bar, nf); net.appendChild(wrap);
   });
+  bindNetSlide();
   $("next").addEventListener("click", pickPuzzle);
   $("retry").addEventListener("click", () => { if (P && !busy && !opponentBusy) { loadPuzzle(P); result = null; render(); } });
   $("solution").addEventListener("click", showSolution);
@@ -757,7 +809,7 @@ function renderNet() {
     b.style.opacity = ghost ? "0.55" : "";
     b.className = "cell" + (mark ? " m" + mark : ghost ? " m" + G.turn : "") + (ws.has(i) ? " win" : "") +
       (i === pending ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : "");
-    b.disabled = !act || !!cells[i];
+    const off = !act || !!cells[i]; b.classList.toggle("off", off); b.setAttribute("aria-disabled", String(off));
   });
 }
 function render() {
@@ -774,8 +826,8 @@ function render() {
   padButtons.forEach(({ b }) => { b.disabled = !canAct(); });
   $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." :
     pendingTwist !== null ? "Twisted " + FACES[TWISTS[pendingTwist].face].name + ". Now place your mark, or turn it back to undo." :
-    pending >= 0 ? "Now twist: drag a row of the cube, or use the arrows. Click your mark again to take it back." :
-    "Place a mark and twist a face, in either order. Drag a row of the cube to twist it.";
+    pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
+    "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.";
   $("retry").hidden = !(result === "failed" || result === "viewing");
   $("solution").hidden = !(result === "failed" || (result === "viewing" && solSeq && solK < solSeq.length));
   $("solution").textContent = result === "viewing" && solSeq ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "Show solution";
