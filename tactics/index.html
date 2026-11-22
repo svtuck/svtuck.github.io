@@ -21,6 +21,7 @@
   --win: #e7b416;
   --tile: #f3f0e8;
   --tile-hi: #cdd8ff;
+  --tile-hint: #ffdf9e;
   --cube-body: #1c1f25;
   --stage-a: #f4f6f9;
   --stage-b: #d9dee6;
@@ -32,14 +33,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #111318; --surface: #1a1d23; --fg: #e6e8ed; --muted: #9ba2ae; --line: #2c3039;
-    --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675;
+    --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675; --tile-hint: #5c4a1f;
     --cube-body: #2c3039; --stage-a: #1e2229; --stage-b: #0f1115; --focus: #8299ff;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #111318; --surface: #1a1d23; --fg: #e6e8ed; --muted: #9ba2ae; --line: #2c3039;
-  --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675;
+  --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675; --tile-hint: #5c4a1f;
   --cube-body: #2c3039; --stage-a: #1e2229; --stage-b: #0f1115; --focus: #8299ff;
   color-scheme: dark;
 }
@@ -125,6 +126,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
 }
 .cell.m1 { color: var(--x); } .cell.m2 { color: var(--o); }
 .cell.hi { background: var(--tile-hi); }
+.cell.hinted { background: var(--tile-hint); }
 .cell.win { background: var(--win); color: #1a1e26; }
 .cell.pending { box-shadow: inset 0 0 0 2px currentColor; }
 .cell[data-label]:empty::after { content: attr(data-label); font: 500 calc(var(--cs) * .42)/1 var(--font-mono); color: var(--muted); opacity: .75; }
@@ -197,6 +199,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
         <div class="controls-row">
           <button type="button" id="next">Skip</button>
           <button type="button" id="retry" hidden>Retry</button>
+          <button type="button" id="hintBtn" hidden>Hint</button>
           <button type="button" id="solution" hidden>Show solution</button>
         </div>
       </div>
@@ -619,6 +622,7 @@ let profile = { rating: 1000, n: 0, streak: 0, history: [] };
 try { const raw = localStorage.getItem(ME_KEY); if (raw) profile = Object.assign(profile, JSON.parse(raw)); } catch (e) {}
 function saveProfile() { try { localStorage.setItem(ME_KEY, JSON.stringify(profile)); } catch (e) {} }
 
+let hintFaces = null, hintUsed = false;
 let G = newState(), pending = -1, pendingTwist = null, busy = false, hoverSlot = -1, highlightFace = null;
 const INV = PERM.map((p) => { const q = new Array(54); p.forEach((j, i) => (q[j] = i)); return q; });
 const aiThinking = false;
@@ -631,7 +635,7 @@ function shownCells() { let c = pendingTwist !== null ? twistCells(G.cells, pend
 
 function loadPuzzle(p) {
   releaseLayer();
-  solSeq = null; solK = 0;
+  solSeq = null; solK = 0; hintFaces = null; hintUsed = false;
   P = p; node = p.t; step = 0; result = null; pending = -1; pendingTwist = null; hoverSlot = -1; highlightFace = null; opponentBusy = false;
   const cells = new Array(54).fill(0); p.x.forEach((c) => (cells[c] = 1)); p.o.forEach((c) => (cells[c] = 2));
   me = p.ply % 2 === 0 ? 1 : 2;
@@ -674,7 +678,7 @@ function chooseTwist(face, dir) {
   }
 }
 function afterMyMove(m) {
-  const before = G; G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; step++;
+  const before = G; G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; step++; hintFaces = null;
   if (G.winner === me) return finish(true, "Solved. " + G.winLines.length + " lines for " + P_(me) + ".");
   if (node === 0) return finish(false, "That move does not win right away.");
   const entry = node.find((e) => e[0] === m);
@@ -693,16 +697,24 @@ function afterMyMove(m) {
     }), reduceMotion ? 0 : 350);
   }, reduceMotion ? 0 : 450);
 }
+function showHint() {
+  if (!P || result || busy || opponentBusy) return;
+  const m = node === 0 ? winningMovesNow(G.cells, me)[0] : node[0][0];
+  if (m === undefined) return;
+  hintFaces = new Set([SLOTS[Math.floor(m / 12)].face, TWISTS[m % 12].face]); hintUsed = true;
+  feedback(hintFaces.size === 1 ? "Hint: one face is lit. The mark goes on it and it is the face to turn." : "Hint: two faces are lit. The mark goes on one of them; the other is the face to turn.", "");
+  render();
+}
 function winningMovesNow(cells, side) { const w = []; scanMoves(cells, side, side, (slot, t, out) => { if (out === 1) w.push(slot * 12 + t); }); return w; }
 function finish(ok, msg) {
   result = ok ? "solved" : "failed";
   const exp = 1 / (1 + Math.pow(10, (P.rating - profile.rating) / 400));
   const K = profile.n < 20 ? 48 : 24;
-  const delta = Math.round(K * ((ok ? 1 : 0) - exp));
+  const delta = ok && hintUsed ? 0 : Math.round(K * ((ok ? 1 : 0) - exp));
   profile.rating += delta; profile.n++; profile.streak = ok ? profile.streak + 1 : 0;
   profile.history.unshift({ id: P.id, ok, rating: P.rating, delta }); profile.history = profile.history.slice(0, 200);
   saveProfile();
-  feedback(msg + "  Rating " + (delta >= 0 ? "+" : "") + delta + ".", ok ? "good solved" : "bad");
+  feedback(msg + (ok && hintUsed ? "  Solved with a hint, so the rating is unchanged." : "  Rating " + (delta >= 0 ? "+" : "") + delta + "."), ok ? "good solved" : "bad");
   render();
 }
 function feedback(t, cls) { const f = $("feedback"); f.textContent = t; f.className = "feedback " + (cls || ""); }
@@ -774,7 +786,12 @@ function buildDom() {
   bindNetSlide();
   $("next").addEventListener("click", pickPuzzle);
   $("retry").addEventListener("click", () => { if (P && !busy && !opponentBusy) { loadPuzzle(P); result = null; render(); } });
-  $("solution").addEventListener("click", showSolution);
+  $("solution").addEventListener("click", () => {
+    if (!P || busy || opponentBusy) return;
+    if (!result) finish(false, "Solution viewed, counted as a miss.");
+    showSolution();
+  });
+  $("hintBtn").addEventListener("click", showHint);
   $("reset").addEventListener("click", () => {
     if ($("reset").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
     else { $("reset").dataset.armed = "1"; $("reset").textContent = "Click again to reset"; }
@@ -798,7 +815,7 @@ function renderStickers() {
     const ghost = !mark && act && pending < 0 && i === hoverSlot ? G.turn : 0;
     const map = tex(mark, ghost, ws.has(i), i === pending);
     if (m.material.map !== map) m.material.map = map;
-    m.material.color.set(highlightFace && inLayer(SLOTS[i], highlightFace) ? 0xbfccff : 0xffffff);
+    m.material.color.set(highlightFace && inLayer(SLOTS[i], highlightFace) ? 0xbfccff : hintFaces && hintFaces.has(SLOTS[i].face) ? 0xffe4a8 : 0xffffff);
   });
 }
 function renderNet() {
@@ -808,7 +825,7 @@ function renderNet() {
     b.textContent = mark ? P_(mark) : ghost ? P_(G.turn) : "";
     b.style.opacity = ghost ? "0.55" : "";
     b.className = "cell" + (mark ? " m" + mark : ghost ? " m" + G.turn : "") + (ws.has(i) ? " win" : "") +
-      (i === pending ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : "");
+      (i === pending ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : hintFaces && hintFaces.has(SLOTS[i].face) ? " hinted" : "");
     const off = !act || !!cells[i]; b.classList.toggle("off", off); b.setAttribute("aria-disabled", String(off));
   });
 }
@@ -829,9 +846,10 @@ function render() {
     pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
     "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.";
   $("retry").hidden = !(result === "failed" || result === "viewing");
-  $("solution").hidden = !(result === "failed" || (result === "viewing" && solSeq && solK < solSeq.length));
+  $("solution").hidden = !P || !(!result || result === "failed" || (result === "viewing" && solSeq && solK < solSeq.length));
+  $("hintBtn").hidden = !P || !!result; $("hintBtn").disabled = busy || opponentBusy;
   $("solution").textContent = result === "viewing" && solSeq ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "Show solution";
-  $("solution").disabled = busy;
+  $("solution").disabled = busy || opponentBusy;
   $("next").textContent = result ? "Next puzzle" : "Skip";
   const h = $("hist"); h.innerHTML = "";
   profile.history.slice(0, 12).forEach((x) => { const li = document.createElement("li"); li.className = x.ok ? "ok" : "no"; li.title = "Puzzle " + x.id + " (" + x.rating + ")"; li.textContent = (x.delta >= 0 ? "+" : "") + x.delta; h.appendChild(li); });
