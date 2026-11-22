@@ -110,10 +110,15 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
 .score b { color: var(--fg); font-weight: 500; }
 
 /* Net: unfolded cube, clickable */
-.net { --cs: clamp(17px, 5vw, 25px); display: grid; grid-template-columns: repeat(4, auto); grid-template-rows: repeat(3, auto); gap: 4px; justify-content: center; }
+.net { --cs: clamp(17px, 5.6vw, 30px); display: grid; grid-template-columns: repeat(4, auto); grid-template-rows: repeat(3, auto); gap: 4px; justify-content: center; }
 .nf { display: grid; grid-template-columns: repeat(3, var(--cs)); gap: 2px; padding: 3px; background: var(--cube-body); border-radius: 6px; }
-.nf[data-face="U"] { grid-area: 1 / 2; } .nf[data-face="L"] { grid-area: 2 / 1; } .nf[data-face="F"] { grid-area: 2 / 2; }
-.nf[data-face="R"] { grid-area: 2 / 3; } .nf[data-face="B"] { grid-area: 2 / 4; } .nf[data-face="D"] { grid-area: 3 / 2; }
+.nfw[data-face="U"] { grid-area: 1 / 2; } .nfw[data-face="L"] { grid-area: 2 / 1; } .nfw[data-face="F"] { grid-area: 2 / 2; }
+.nfw[data-face="R"] { grid-area: 2 / 3; } .nfw[data-face="B"] { grid-area: 2 / 4; } .nfw[data-face="D"] { grid-area: 3 / 2; }
+.nfw { display: flex; flex-direction: column; gap: 3px; }
+.nbar { display: flex; align-items: center; justify-content: space-between; }
+.nbar button { width: calc(var(--cs) * .95); height: calc(var(--cs) * .95); padding: 0; border-radius: 50%; font-size: calc(var(--cs) * .62); line-height: 1; display: grid; place-items: center; }
+.nbar button:not(:disabled) { border-color: var(--fg); }
+.nbar span { font: 600 calc(var(--cs) * .5)/1 var(--font-mono); color: var(--muted); }
 .cell {
   width: var(--cs); height: var(--cs); padding: 0; border: 0; border-radius: 3px; background: var(--tile);
   display: grid; place-items: center; font: 700 calc(var(--cs) * .56)/1 var(--font-display);
@@ -195,21 +200,17 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
         </div>
       </div>
 
-      <div class="panel">
-        <h2>Twist a face</h2>
-        <div class="pads" id="pads"></div>
-        <p class="turn-note" id="turnNote"></p>
-      </div>
 
       <div class="panel">
         <h2>Unfolded cube</h2>
         <div class="net" id="net"></div>
+        <p class="turn-note" id="turnNote"></p>
       </div>
 
       <div class="panel">
         <h2>Your rating</h2>
         <div class="me">
-          <div><div class="big" id="myRating">1500</div><div class="lbl">puzzle rating</div></div>
+          <div><div class="big" id="myRating">1000</div><div class="lbl">puzzle rating</div></div>
           <div><div class="big" id="myCount">0</div><div class="lbl">attempted</div></div>
           <div><div class="big" id="myStreak">0</div><div class="lbl">streak</div></div>
           <button type="button" id="reset">Reset rating</button>
@@ -522,8 +523,8 @@ function setHover(s) { if (hoverSlot !== s) { hoverSlot = s; renderStickers(); r
 // t (solution tree): 0 = "any immediate win finishes it"; otherwise a list of [move, reply, child] where
 // move is an accepted move, reply the defender's answer (-1 = the move already won) and child the next node.
 let DATA = null, P = null, node = null, me = 1, step = 0, result = null, opponentBusy = false;
-const ME_KEY = "twist-tactics-v1";
-let profile = { rating: 1500, n: 0, streak: 0, history: [] };
+const ME_KEY = "twist-tactics-v2";
+let profile = { rating: 1000, n: 0, streak: 0, history: [] };
 try { const raw = localStorage.getItem(ME_KEY); if (raw) profile = Object.assign(profile, JSON.parse(raw)); } catch (e) {}
 function saveProfile() { try { localStorage.setItem(ME_KEY, JSON.stringify(profile)); } catch (e) {} }
 
@@ -632,7 +633,23 @@ const $ = (id) => document.getElementById(id);
 const netCells = [], padButtons = [];
 function buildDom() {
   const net = $("net");
+  const mk = (f, dir) => {
+    const b = document.createElement("button"); b.type = "button"; b.id = "turn-" + f + dir;
+    b.textContent = dir === "cw" ? "↻" : "↺";
+    b.setAttribute("aria-label", "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise"));
+    b.title = "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise") + " (key " + f + (dir === "cw" ? "" : " with Shift") + ")";
+    b.addEventListener("click", () => chooseTwist(f, dir));
+    const on = () => { if (!canAct() || pending < 0) return; highlightFace = f; previewLayer(f, dir); renderStickers(); renderNet(); };
+    const off = () => { highlightFace = null; clearPreview(); renderStickers(); renderNet(); };
+    b.addEventListener("mouseenter", on); b.addEventListener("focus", on);
+    b.addEventListener("mouseleave", off); b.addEventListener("blur", off);
+    padButtons.push({ b, f, dir }); return b;
+  };
   ORDER.forEach((f, fi) => {
+    const wrap = document.createElement("div"); wrap.className = "nfw"; wrap.dataset.face = f;
+    const bar = document.createElement("div"); bar.className = "nbar";
+    const lab = document.createElement("span"); lab.textContent = f;
+    bar.append(mk(f, "ccw"), lab, mk(f, "cw"));
     const nf = document.createElement("div"); nf.className = "nf"; nf.dataset.face = f;
     for (let k = 0; k < 9; k++) {
       const i = fi * 9 + k, b = document.createElement("button");
@@ -644,31 +661,13 @@ function buildDom() {
       b.addEventListener("mouseleave", () => setHover(-1));
       nf.appendChild(b); netCells.push(b);
     }
-    net.appendChild(nf);
-  });
-  const pads = $("pads");
-  ["U", "D", "L", "R", "F", "B"].forEach((f) => {
-    const pad = document.createElement("div"); pad.className = "pad";
-    const mk = (dir) => {
-      const b = document.createElement("button"); b.type = "button"; b.id = "turn-" + f + dir;
-      b.textContent = dir === "cw" ? "↻" : "↺";
-      b.setAttribute("aria-label", "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise"));
-      b.addEventListener("click", () => chooseTwist(f, dir));
-      const on = () => { if (!canAct() || pending < 0) return; highlightFace = f; previewLayer(f, dir); renderStickers(); renderNet(); };
-      const off = () => { highlightFace = null; clearPreview(); renderStickers(); renderNet(); };
-      b.addEventListener("mouseenter", on); b.addEventListener("focus", on);
-      b.addEventListener("mouseleave", off); b.addEventListener("blur", off);
-      padButtons.push({ b, f, dir }); return b;
-    };
-    const lab = document.createElement("span"); lab.className = "fl";
-    lab.innerHTML = f + "<small>" + FACES[f].name + "</small>";
-    pad.append(mk("ccw"), lab, mk("cw")); pads.appendChild(pad);
+    wrap.append(bar, nf); net.appendChild(wrap);
   });
   $("next").addEventListener("click", pickPuzzle);
   $("retry").addEventListener("click", () => { if (P && !busy && !opponentBusy) { loadPuzzle(P); result = null; render(); } });
   $("solution").addEventListener("click", showSolution);
   $("reset").addEventListener("click", () => {
-    if ($("reset").dataset.armed) { profile = { rating: 1500, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
+    if ($("reset").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
     else { $("reset").dataset.armed = "1"; $("reset").textContent = "Click again to reset"; }
   });
   $("hint").textContent = coarse ? "Drag to orbit · tap a square, then a twist" : "Drag to orbit · click a square, then a twist";
@@ -715,7 +714,7 @@ function render() {
     $("steps").innerHTML = Array.from({ length: total }, (_, k) => '<span class="dot' + (k < step ? (result === "failed" && k === step - 1 ? " bad" : " done") : k === step && !result ? " on" : "") + '"></span>').join("");
   }
   padButtons.forEach(({ b }) => { b.disabled = !canAct() || pending < 0; });
-  $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." : pending < 0 ? "Step 1: place your mark." : "Step 2: twist a face to finish the move. Esc takes back the mark.";
+  $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." : pending < 0 ? "Step 1: place your mark." : "Step 2: twist a face with the arrows above each face (or keys U D L R F B, Shift to reverse).";
   $("retry").hidden = !(result === "failed" || result === "viewing");
   $("solution").hidden = result !== "failed";
   $("next").textContent = result ? "Next puzzle" : "Skip";
