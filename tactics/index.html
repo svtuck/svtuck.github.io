@@ -200,6 +200,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
           <button type="button" id="next">Skip</button>
           <button type="button" id="retry" hidden>Retry</button>
           <button type="button" id="hintBtn" hidden>Hint</button>
+          <button type="button" id="solBack" hidden>Back</button>
           <button type="button" id="solution" hidden>Show solution</button>
         </div>
       </div>
@@ -720,7 +721,14 @@ function finish(ok, msg) {
 function feedback(t, cls) { const f = $("feedback"); f.textContent = t; f.className = "feedback " + (cls || ""); }
 
 // Solution walkthrough: reset to the start, then each click plays the next move (yours, then the reply).
-let solSeq = null, solK = 0;
+// Solution walkthrough: reset to the start; Next plays one move (yours, then the reply), Back unwinds one.
+// solStates[k] is the position after k moves of the line.
+let solSeq = null, solK = 0, solStates = null;
+function solText() {
+  if (solK === 0) return "Start position. Click Next move to step through the solution.";
+  if (solK >= solSeq.length) return "Solution complete.";
+  return (solK % 2 === 1 ? "Your move" : "Opponent's reply") + " (" + solK + " of " + solSeq.length + ").";
+}
 function showSolution() {
   if (!P || busy || opponentBusy) return;
   if (!solSeq) {
@@ -735,17 +743,27 @@ function showSolution() {
       st = applyMove(st, { slot: Math.floor(r / 12), t: r % 12 }); nd = nd[0][2];
     }
     solSeq = []; line.forEach(([m, r]) => { solSeq.push(m); if (r >= 0) solSeq.push(r); });
-    solK = 0; feedback("Solution: click Next move to step through it.", ""); render(); return;
+    solStates = [G]; solSeq.forEach((m) => solStates.push(applyMove(solStates[solStates.length - 1], { slot: Math.floor(m / 12), t: m % 12 })));
+    solK = 0; feedback(solText(), ""); render(); return;
   }
-  if (solK >= solSeq.length) return;
-  const m = solSeq[solK++], mine = G.turn === me;
-  busy = true; pending = Math.floor(m / 12); render();
-  const { face, dir } = TWISTS[m % 12];
-  setTimeout(() => commitLayer(face, dir, () => {
-    G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; busy = false;
-    feedback(solK >= solSeq.length ? "Solution complete." : mine ? "Your move. Click Next move for the opponent's reply." : "Opponent's reply. Click Next move.", "");
+  solutionStep(1);
+}
+function solutionStep(dirn) {
+  if (!solSeq || busy) return;
+  if (dirn > 0 && solK >= solSeq.length) return;
+  if (dirn < 0 && solK <= 0) return;
+  busy = true;
+  if (dirn > 0) {
+    const m = solSeq[solK];
+    pending = Math.floor(m / 12); render();
+    const { face, dir } = TWISTS[m % 12];
+    setTimeout(() => commitLayer(face, dir, () => { solK++; G = solStates[solK]; pending = -1; busy = false; feedback(solText(), ""); render(); }), reduceMotion ? 0 : 250);
+  } else {
+    // turn the face back the other way, then lift the mark off
+    const m = solSeq[solK - 1], inv = TWISTS[(m % 12) ^ 1];
     render();
-  }), reduceMotion ? 0 : 250);
+    commitLayer(inv.face, inv.dir, () => { solK--; G = solStates[solK]; busy = false; feedback(solText(), ""); render(); });
+  }
 }
 
 /* ---------------- DOM ---------------- */
@@ -792,6 +810,7 @@ function buildDom() {
     showSolution();
   });
   $("hintBtn").addEventListener("click", showHint);
+  $("solBack").addEventListener("click", () => solutionStep(-1));
   $("reset").addEventListener("click", () => {
     if ($("reset").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
     else { $("reset").dataset.armed = "1"; $("reset").textContent = "Click again to reset"; }
@@ -804,6 +823,7 @@ function buildDom() {
     if (e.key === "Escape" && pending >= 0 && canAct()) { pending = -1; render(); }
     else if (e.key === "Escape" && pendingTwist !== null && canAct()) { const t = pendingTwist ^ 1; chooseTwist(TWISTS[t].face, TWISTS[t].dir); }
     if (e.key === "n" && result) pickPuzzle();
+    if (result === "viewing" && solSeq && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); solutionStep(e.key === "ArrowRight" ? 1 : -1); }
   });
 }
 function winSet() { const s = new Set(); G.winLines.forEach((L) => L.forEach((i) => s.add(i))); return s; }
@@ -846,10 +866,11 @@ function render() {
     pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
     "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.";
   $("retry").hidden = !(result === "failed" || result === "viewing");
-  $("solution").hidden = !P || !(!result || result === "failed" || (result === "viewing" && solSeq && solK < solSeq.length));
+  $("solution").hidden = !P || !(!result || result === "failed" || (result === "viewing" && solSeq));
   $("hintBtn").hidden = !P || !!result; $("hintBtn").disabled = busy || opponentBusy;
-  $("solution").textContent = result === "viewing" && solSeq ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "Show solution";
-  $("solution").disabled = busy || opponentBusy;
+  $("solution").textContent = result === "viewing" && solSeq ? (solK < solSeq.length ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "End of solution") : "Show solution";
+  $("solution").disabled = busy || opponentBusy || (result === "viewing" && solSeq && solK >= solSeq.length);
+  $("solBack").hidden = !(result === "viewing" && solSeq); $("solBack").disabled = busy || !solSeq || solK === 0;
   $("next").textContent = result ? "Next puzzle" : "Skip";
   const h = $("hist"); h.innerHTML = "";
   profile.history.slice(0, 12).forEach((x) => { const li = document.createElement("li"); li.className = x.ok ? "ok" : "no"; li.title = "Puzzle " + x.id + " (" + x.rating + ")"; li.textContent = (x.delta >= 0 ? "+" : "") + x.delta; h.appendChild(li); });
