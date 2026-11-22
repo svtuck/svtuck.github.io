@@ -96,6 +96,8 @@ h3 { font: 600 17px/1.3 var(--font-display); margin: 0 0 10px; letter-spacing: -
 .step.on { border-color: var(--fg); color: var(--fg); background: var(--bg); }
 .step.done { color: var(--muted); text-decoration: line-through; }
 
+button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button.primary:hover:not(:disabled) { opacity: .9; }
 .controls-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .seg button { border: 0; border-radius: 0; background: transparent; }
@@ -198,6 +200,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
         <p class="feedback" id="feedback" role="status"></p>
         <div class="controls-row">
           <button type="button" id="next">Skip</button>
+          <button type="button" id="submit" class="primary" hidden>Submit</button>
           <button type="button" id="reset" hidden>Reset</button>
           <button type="button" id="hintBtn" hidden>Hint</button>
           <button type="button" id="solBack" hidden>Back</button>
@@ -628,15 +631,17 @@ let G = newState(), pending = -1, pendingTwist = null, busy = false, hoverSlot =
 const INV = PERM.map((p) => { const q = new Array(54); p.forEach((j, i) => (q[j] = i)); return q; });
 const aiThinking = false;
 const P_ = (p) => (p === 1 ? "X" : "O");
-function canAct() { return !!P && !result && !busy && !opponentBusy && !over(G); }
+// staged: a complete move (mark + twist) shown on the board but not yet submitted for checking
+let staged = null;
+function canAct() { return !!P && !result && !busy && !opponentBusy && !over(G) && staged === null; }
 function cellName(i) { const sl = SLOTS[i]; return sl.face + (sl.row * 3 + sl.col + 1); }
 function twistName(t) { const { face, dir } = TWISTS[t]; return face + (dir === "ccw" ? "'" : ""); }
 const mvName = (m) => cellName(Math.floor(m / 12)) + "+" + twistName(m % 12);
-function shownCells() { let c = pendingTwist !== null ? twistCells(G.cells, pendingTwist) : G.cells; if (pending >= 0) { c = c.slice(); c[pending] = G.turn; } return c; }
+function shownCells() { if (staged !== null) return applyMove(G, { slot: Math.floor(staged / 12), t: staged % 12 }).cells; let c = pendingTwist !== null ? twistCells(G.cells, pendingTwist) : G.cells; if (pending >= 0) { c = c.slice(); c[pending] = G.turn; } return c; }
 
 function loadPuzzle(p) {
   releaseLayer();
-  solSeq = null; solK = 0; hintFaces = null; hintUsed = false;
+  solSeq = null; solK = 0; hintFaces = null; hintUsed = false; staged = null;
   P = p; node = p.t; step = 0; result = null; pending = -1; pendingTwist = null; hoverSlot = -1; highlightFace = null; opponentBusy = false;
   const cells = new Array(54).fill(0); p.x.forEach((c) => (cells[c] = 1)); p.o.forEach((c) => (cells[c] = 2));
   me = p.ply % 2 === 0 ? 1 : 2;
@@ -659,7 +664,7 @@ function pickPuzzle() {
 // twisting t then placing on PERM[t][c], so a twist-first turn is recorded as the move (INV[t][square], t).
 function choosePlace(i) {
   if (!canAct() || shownCells()[i]) return;
-  if (pendingTwist !== null) { const t = pendingTwist; pendingTwist = null; afterMyMove(INV[t][i] * 12 + t); return; }
+  if (pendingTwist !== null) { const t = pendingTwist; pendingTwist = null; stageMove(INV[t][i] * 12 + t); return; }
   pending = pending === i ? -1 : i; render();
 }
 function chooseTwist(face, dir) {
@@ -668,7 +673,7 @@ function chooseTwist(face, dir) {
   if (pending >= 0) {
     const m = pending * 12 + t;
     busy = true; highlightFace = null; render();
-    commitLayer(face, dir, () => { busy = false; afterMyMove(m); });
+    commitLayer(face, dir, () => { busy = false; pending = -1; stageMove(m); });
   } else if (pendingTwist === null) {
     busy = true; highlightFace = null; render();
     commitLayer(face, dir, () => { busy = false; pendingTwist = t; render(); });
@@ -678,6 +683,12 @@ function chooseTwist(face, dir) {
   } else {
     clearPreview(); feedback("One twist per turn. Turn " + TWISTS[pendingTwist].face + " back to undo it first.", "bad"); render();
   }
+}
+function stagedLanding() { return staged === null ? -1 : PERM[staged % 12][Math.floor(staged / 12)]; }
+function stageMove(m) { staged = m; hintFaces = null; feedback("Move ready. Submit to check it, or Reset to take it back.", ""); render(); }
+function submitMove() {
+  if (staged === null || busy || opponentBusy || result) return;
+  const m = staged; staged = null; afterMyMove(m);
 }
 function afterMyMove(m) {
   const before = G; G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; step++; hintFaces = null;
@@ -710,6 +721,9 @@ function showHint() {
 function resetPuzzle() {
   if (!P || busy || opponentBusy) return;
   if (result === "viewing" && solSeq) { releaseLayer(); solK = 0; G = solStates[0]; pending = -1; feedback(solText(), ""); render(); return; }
+  if (!result && (staged !== null || pending >= 0 || pendingTwist !== null)) {
+    releaseLayer(); staged = null; pending = -1; pendingTwist = null; feedback("Move taken back.", ""); render(); return;
+  }
   const keepHint = hintUsed;
   loadPuzzle(P); hintUsed = keepHint;
   feedback(rated ? "Back to the start. Practice attempt: your rating will not change." : "Back to the start position.", "");
@@ -815,6 +829,7 @@ function buildDom() {
   bindNetSlide();
   $("next").addEventListener("click", pickPuzzle);
   $("reset").addEventListener("click", resetPuzzle);
+  $("submit").addEventListener("click", submitMove);
   $("solution").addEventListener("click", () => {
     if (!P || busy || opponentBusy) return;
     if (!result) finish(false, "Solution viewed, counted as a miss.");
@@ -834,6 +849,7 @@ function buildDom() {
     if (e.key === "Escape" && pending >= 0 && canAct()) { pending = -1; render(); }
     else if (e.key === "Escape" && pendingTwist !== null && canAct()) { const t = pendingTwist ^ 1; chooseTwist(TWISTS[t].face, TWISTS[t].dir); }
     if (e.key === "n" && result) pickPuzzle();
+    if (e.key === "Enter" && staged !== null) { e.preventDefault(); submitMove(); }
     if (result === "viewing" && solSeq && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); solutionStep(e.key === "ArrowRight" ? 1 : -1); }
   });
 }
@@ -844,7 +860,7 @@ function renderStickers() {
   stickers.forEach((m) => {
     const i = m.userData.slot, mark = cells[i];
     const ghost = !mark && act && pending < 0 && i === hoverSlot ? G.turn : 0;
-    const map = tex(mark, ghost, ws.has(i), i === pending);
+    const map = tex(mark, ghost, ws.has(i), i === pending || i === stagedLanding());
     if (m.material.map !== map) m.material.map = map;
     m.material.color.set(highlightFace && inLayer(SLOTS[i], highlightFace) ? 0xbfccff : hintFaces && hintFaces.has(SLOTS[i].face) ? 0xffe4a8 : 0xffffff);
   });
@@ -856,7 +872,7 @@ function renderNet() {
     b.textContent = mark ? P_(mark) : ghost ? P_(G.turn) : "";
     b.style.opacity = ghost ? "0.55" : "";
     b.className = "cell" + (mark ? " m" + mark : ghost ? " m" + G.turn : "") + (ws.has(i) ? " win" : "") +
-      (i === pending ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : hintFaces && hintFaces.has(SLOTS[i].face) ? " hinted" : "");
+      (i === pending || i === stagedLanding() ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : hintFaces && hintFaces.has(SLOTS[i].face) ? " hinted" : "");
     const off = !act || !!cells[i]; b.classList.toggle("off", off); b.setAttribute("aria-disabled", String(off));
   });
 }
@@ -873,10 +889,12 @@ function render() {
   }
   padButtons.forEach(({ b }) => { b.disabled = !canAct(); });
   $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." :
+    staged !== null ? "Press Submit (or Enter) to check this move." :
     pendingTwist !== null ? "Twisted " + FACES[TWISTS[pendingTwist].face].name + ". Now place your mark, or turn it back to undo." :
     pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
     "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.";
-  const dirty = pending >= 0 || pendingTwist !== null || step > 0 || !!result || (result === "viewing" && solK > 0);
+  const dirty = staged !== null || pending >= 0 || pendingTwist !== null || step > 0 || !!result || (result === "viewing" && solK > 0);
+  $("submit").hidden = staged === null || !!result; $("submit").disabled = busy || opponentBusy;
   $("reset").hidden = !P || !dirty || (result === "viewing" && (!solSeq || solK === 0)); $("reset").disabled = busy || opponentBusy;
   $("solution").hidden = !P || !(!result || result === "failed" || (result === "viewing" && solSeq));
   $("hintBtn").hidden = !P || !!result; $("hintBtn").disabled = busy || opponentBusy;
