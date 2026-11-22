@@ -179,7 +179,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); ou
 <div class="wrap">
   <section class="game">
     <div class="stage" id="stage">
-      <div class="hint" id="hint">Drag to orbit · click a square, then a twist</div>
+      <div class="hint" id="hint">Drag a row to twist · drag the background to orbit</div>
       <button class="view-btn" id="resetView" type="button">Reset view</button>
     </div>
 
@@ -447,7 +447,7 @@ function releaseLayer() {
   pivot.quaternion.identity(); layer = null;
 }
 function previewLayer(f, dir) {
-  if (reduceMotion || busy || !canAct() || pending < 0) return;
+  if (reduceMotion || busy || !canAct()) return;
   if (!layer || layer.face !== f) grabLayer(f);
   layer.target = (dir === "cw" ? -1 : 1) * 0.22;
 }
@@ -479,34 +479,74 @@ function pick(e) {
   const hit = raycaster.intersectObjects(bodies.concat(stickers), false)[0];
   return hit && hit.object.userData.slot !== undefined ? hit.object.userData.slot : -1;
 }
+const FACE_BY_NORMAL = {}; ORDER.forEach((f) => (FACE_BY_NORMAL[FACES[f].n.join(",")] = f));
+function screenOf(v) { const w = new THREE.Vector3(v[0], v[1], v[2]); root.localToWorld(w); w.project(camera); const r = canvas.getBoundingClientRect(); return [(w.x + 1) / 2 * r.width, (1 - w.y) / 2 * r.height]; }
+// Work out which face a drag on sticker `slot` turns: the drag direction is snapped to one of the sticker's two
+// in-plane axes d; dragging along d rotates about A = n x d, and the turning layer is the one holding the sticker.
+function setupSlide(drag, dx, dy) {
+  const sl = SLOTS[drag.slot], n = sl.n, c = V.add(sl.p, V.mul(n, 0.5)), p0 = screenOf(c);
+  const len = Math.hypot(dx, dy); let best = null;
+  for (let k = 0; k < 3; k++) {
+    if (n[k] !== 0) continue;
+    const u = [0, 0, 0]; u[k] = 1;
+    const p1 = screenOf(V.add(c, V.mul(u, 0.5))), sx = p1[0] - p0[0], sy = p1[1] - p0[1], sl2 = Math.hypot(sx, sy) || 1;
+    const dot = (dx * sx + dy * sy) / (sl2 * len);
+    if (!best || Math.abs(dot) > Math.abs(best.dot)) best = { u, dot, sx: sx / sl2, sy: sy / sl2, px: sl2 * 2 };
+  }
+  const sg = best.dot >= 0 ? 1 : -1, d = V.mul(best.u, sg), A = V.cross(n, d);
+  const layerSide = V.dot(sl.p, A);                 // -1, 0 (middle slice: not a legal turn) or +1
+  if (layerSide === 0) return false;
+  const face = FACE_BY_NORMAL[V.mul(A, layerSide).map((x) => (x === 0 ? 0 : x)).join(",")];
+  if (!face) return false;
+  Object.assign(drag, { face, ux: best.sx * sg, uy: best.sy * sg, sign: layerSide, ppq: Math.max(40, best.px * 1.3), ang: 0 });
+  if (!layer || layer.face !== face) grabLayer(face);
+  highlightFace = face; renderStickers(); renderNet();
+  return true;
+}
 function bindPointer() {
   let drag = null;
   const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion();
   canvas.addEventListener("pointerdown", (e) => {
-    drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false };
+    const s = pick(e);
+    drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, slot: s, mode: s >= 0 && canAct() && !reduceMotion ? "maybe" : "orbit" };
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener("pointermove", (e) => {
     if (drag) {
-      if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 6) { drag.moved = true; canvas.classList.add("dragging"); setHover(-1); }
-      if (drag.moved) {
+      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      if (!drag.moved && Math.hypot(dx, dy) > 7) {
+        drag.moved = true; canvas.classList.add("dragging"); setHover(-1);
+        if (drag.mode === "maybe") drag.mode = setupSlide(drag, dx, dy) ? "slide" : "orbit";
+      }
+      if (!drag.moved) return;
+      if (drag.mode === "slide") {
+        const t = Math.max(-1, Math.min(1, (dx * drag.ux + dy * drag.uy) / drag.ppq));
+        drag.ang = t * Math.PI / 2 * drag.sign;
+        if (layer && !layer.commit) { layer.angle = layer.target = drag.ang; pivot.quaternion.setFromAxisAngle(layer.axis, drag.ang); }
+      } else {
         root.quaternion.premultiply(q.setFromAxisAngle(AY, (e.clientX - drag.x) * 0.009));
         root.quaternion.premultiply(q.setFromAxisAngle(AX, (e.clientY - drag.y) * 0.009));
-        drag.x = e.clientX; drag.y = e.clientY;
       }
+      drag.x = e.clientX; drag.y = e.clientY;
       return;
     }
     if (e.pointerType === "mouse") {
       const s = pick(e);
-      const ok = s >= 0 && canAct() && !G.cells[s];
+      const ok = s >= 0 && canAct() && !shownCells()[s];
       canvas.classList.toggle("pointing", ok);
       setHover(ok ? s : -1);
     }
   });
   const end = (e) => {
     if (!drag) return;
-    const wasDrag = drag.moved; drag = null; canvas.classList.remove("dragging");
-    if (wasDrag || e.type === "pointercancel") return;
+    const d = drag; drag = null; canvas.classList.remove("dragging");
+    if (d.mode === "slide") {
+      highlightFace = null;
+      if (Math.abs(d.ang) > Math.PI / 8 && e.type !== "pointercancel") chooseTwist(d.face, d.ang > 0 ? "ccw" : "cw");
+      else { clearPreview(); renderStickers(); renderNet(); }
+      return;
+    }
+    if (d.moved || e.type === "pointercancel") return;
     const s = pick(e);
     if (s >= 0) choosePlace(s);
   };
@@ -528,18 +568,19 @@ let profile = { rating: 1000, n: 0, streak: 0, history: [] };
 try { const raw = localStorage.getItem(ME_KEY); if (raw) profile = Object.assign(profile, JSON.parse(raw)); } catch (e) {}
 function saveProfile() { try { localStorage.setItem(ME_KEY, JSON.stringify(profile)); } catch (e) {} }
 
-let G = newState(), pending = -1, busy = false, hoverSlot = -1, highlightFace = null;
+let G = newState(), pending = -1, pendingTwist = null, busy = false, hoverSlot = -1, highlightFace = null;
+const INV = PERM.map((p) => { const q = new Array(54); p.forEach((j, i) => (q[j] = i)); return q; });
 const aiThinking = false;
 const P_ = (p) => (p === 1 ? "X" : "O");
 function canAct() { return !!P && !result && !busy && !opponentBusy && !over(G); }
 function cellName(i) { const sl = SLOTS[i]; return sl.face + (sl.row * 3 + sl.col + 1); }
 function twistName(t) { const { face, dir } = TWISTS[t]; return face + (dir === "ccw" ? "'" : ""); }
 const mvName = (m) => cellName(Math.floor(m / 12)) + "+" + twistName(m % 12);
-function shownCells() { if (pending < 0) return G.cells; const c = G.cells.slice(); c[pending] = G.turn; return c; }
+function shownCells() { let c = pendingTwist !== null ? twistCells(G.cells, pendingTwist) : G.cells; if (pending >= 0) { c = c.slice(); c[pending] = G.turn; } return c; }
 
 function loadPuzzle(p) {
   releaseLayer();
-  P = p; node = p.t; step = 0; result = null; pending = -1; hoverSlot = -1; highlightFace = null; opponentBusy = false;
+  P = p; node = p.t; step = 0; result = null; pending = -1; pendingTwist = null; hoverSlot = -1; highlightFace = null; opponentBusy = false;
   const cells = new Array(54).fill(0); p.x.forEach((c) => (cells[c] = 1)); p.o.forEach((c) => (cells[c] = 2));
   me = p.ply % 2 === 0 ? 1 : 2;
   G = { cells, turn: me, last: null, winner: 0, winLines: [], draw: false, ply: p.ply };
@@ -556,15 +597,29 @@ function pickPuzzle() {
   loadPuzzle(pool[Math.floor(Math.random() * Math.min(6, pool.length))]);
 }
 
+// A turn is one mark and one twist, in either order: placing on c then twisting t gives the same board as
+// twisting t then placing on PERM[t][c], so a twist-first turn is recorded as the move (INV[t][square], t).
 function choosePlace(i) {
-  if (!canAct() || G.cells[i]) return;
+  if (!canAct() || shownCells()[i]) return;
+  if (pendingTwist !== null) { const t = pendingTwist; pendingTwist = null; afterMyMove(INV[t][i] * 12 + t); return; }
   pending = pending === i ? -1 : i; render();
 }
 function chooseTwist(face, dir) {
-  if (!canAct() || pending < 0) return;
-  const m = pending * 12 + twistIndex(face, dir);
-  busy = true; highlightFace = null; render();
-  commitLayer(face, dir, () => { busy = false; afterMyMove(m); });
+  if (!canAct()) { clearPreview(); return; }
+  const t = twistIndex(face, dir);
+  if (pending >= 0) {
+    const m = pending * 12 + t;
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; afterMyMove(m); });
+  } else if (pendingTwist === null) {
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; pendingTwist = t; render(); });
+  } else if (pendingTwist === (t ^ 1)) {
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; pendingTwist = null; render(); });
+  } else {
+    clearPreview(); feedback("One twist per turn. Turn " + TWISTS[pendingTwist].face + " back to undo it first.", "bad"); render();
+  }
 }
 function afterMyMove(m) {
   const before = G; G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; step++;
@@ -639,7 +694,7 @@ function buildDom() {
     b.setAttribute("aria-label", "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise"));
     b.title = "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise") + " (key " + f + (dir === "cw" ? "" : " with Shift") + ")";
     b.addEventListener("click", () => chooseTwist(f, dir));
-    const on = () => { if (!canAct() || pending < 0) return; highlightFace = f; previewLayer(f, dir); renderStickers(); renderNet(); };
+    const on = () => { if (!canAct()) return; highlightFace = f; previewLayer(f, dir); renderStickers(); renderNet(); };
     const off = () => { highlightFace = null; clearPreview(); renderStickers(); renderNet(); };
     b.addEventListener("mouseenter", on); b.addEventListener("focus", on);
     b.addEventListener("mouseleave", off); b.addEventListener("blur", off);
@@ -657,7 +712,7 @@ function buildDom() {
       if (k === 4) b.dataset.label = f;
       b.setAttribute("aria-label", FACES[f].name + " face, square " + (k + 1));
       b.addEventListener("click", () => choosePlace(i));
-      b.addEventListener("mouseenter", () => { if (canAct() && !G.cells[i]) setHover(i); });
+      b.addEventListener("mouseenter", () => { if (canAct() && !shownCells()[i]) setHover(i); });
       b.addEventListener("mouseleave", () => setHover(-1));
       nf.appendChild(b); netCells.push(b);
     }
@@ -670,12 +725,13 @@ function buildDom() {
     if ($("reset").dataset.armed) { profile = { rating: 1000, n: 0, streak: 0, history: [] }; saveProfile(); delete $("reset").dataset.armed; $("reset").textContent = "Reset rating"; render(); }
     else { $("reset").dataset.armed = "1"; $("reset").textContent = "Click again to reset"; }
   });
-  $("hint").textContent = coarse ? "Drag to orbit · tap a square, then a twist" : "Drag to orbit · click a square, then a twist";
+  $("hint").textContent = "Drag a row to twist · drag the background to orbit";
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const m = /^Key([UDLRFB])$/.exec(e.code);
-    if (m && canAct() && pending >= 0) { e.preventDefault(); chooseTwist(m[1], e.shiftKey ? "ccw" : "cw"); }
+    if (m && canAct()) { e.preventDefault(); chooseTwist(m[1], e.shiftKey ? "ccw" : "cw"); }
     if (e.key === "Escape" && pending >= 0 && canAct()) { pending = -1; render(); }
+    else if (e.key === "Escape" && pendingTwist !== null && canAct()) { const t = pendingTwist ^ 1; chooseTwist(TWISTS[t].face, TWISTS[t].dir); }
     if (e.key === "n" && result) pickPuzzle();
   });
 }
@@ -699,7 +755,7 @@ function renderNet() {
     b.style.opacity = ghost ? "0.55" : "";
     b.className = "cell" + (mark ? " m" + mark : ghost ? " m" + G.turn : "") + (ws.has(i) ? " win" : "") +
       (i === pending ? " pending" : "") + (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : "");
-    b.disabled = !act || !!G.cells[i];
+    b.disabled = !act || !!cells[i];
   });
 }
 function render() {
@@ -713,8 +769,11 @@ function render() {
     const total = P.d;
     $("steps").innerHTML = Array.from({ length: total }, (_, k) => '<span class="dot' + (k < step ? (result === "failed" && k === step - 1 ? " bad" : " done") : k === step && !result ? " on" : "") + '"></span>').join("");
   }
-  padButtons.forEach(({ b }) => { b.disabled = !canAct() || pending < 0; });
-  $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." : pending < 0 ? "Step 1: place your mark." : "Step 2: twist a face with the arrows above each face (or keys U D L R F B, Shift to reverse).";
+  padButtons.forEach(({ b }) => { b.disabled = !canAct(); });
+  $("turnNote").textContent = !P || result ? "" : opponentBusy ? "Opponent is replying." :
+    pendingTwist !== null ? "Twisted " + FACES[TWISTS[pendingTwist].face].name + ". Now place your mark, or turn it back to undo." :
+    pending >= 0 ? "Now twist: drag a row of the cube, or use the arrows. Click your mark again to take it back." :
+    "Place a mark and twist a face, in either order. Drag a row of the cube to twist it.";
   $("retry").hidden = !(result === "failed" || result === "viewing");
   $("solution").hidden = result !== "failed";
   $("next").textContent = result ? "Next puzzle" : "Skip";
