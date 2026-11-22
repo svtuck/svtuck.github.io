@@ -580,6 +580,7 @@ function shownCells() { let c = pendingTwist !== null ? twistCells(G.cells, pend
 
 function loadPuzzle(p) {
   releaseLayer();
+  solSeq = null; solK = 0;
   P = p; node = p.t; step = 0; result = null; pending = -1; pendingTwist = null; hoverSlot = -1; highlightFace = null; opponentBusy = false;
   const cells = new Array(54).fill(0); p.x.forEach((c) => (cells[c] = 1)); p.o.forEach((c) => (cells[c] = 2));
   me = p.ply % 2 === 0 ? 1 : 2;
@@ -624,9 +625,9 @@ function chooseTwist(face, dir) {
 function afterMyMove(m) {
   const before = G; G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; step++;
   if (G.winner === me) return finish(true, "Solved. " + G.winLines.length + " lines for " + P_(me) + ".");
-  if (node === 0) return finish(false, "That move does not win right away. " + hintFor(before, 0));
+  if (node === 0) return finish(false, "That move does not win right away.");
   const entry = node.find((e) => e[0] === m);
-  if (!entry) return finish(false, "That move lets the win slip. " + hintFor(before, node));
+  if (!entry) return finish(false, "That move lets the win slip.");
   feedback("Correct. Keep going.", "good");
   const r = entry[1]; node = entry[2];
   opponentBusy = true; render();
@@ -642,10 +643,6 @@ function afterMyMove(m) {
   }, reduceMotion ? 0 : 450);
 }
 function winningMovesNow(cells, side) { const w = []; scanMoves(cells, side, side, (slot, t, out) => { if (out === 1) w.push(slot * 12 + t); }); return w; }
-function hintFor(state, nd) {
-  const m = nd === 0 ? winningMovesNow(state.cells, me)[0] : nd[0][0];
-  return m === undefined ? "" : "One winning move was " + mvName(m) + ".";
-}
 function finish(ok, msg) {
   result = ok ? "solved" : "failed";
   const exp = 1 / (1 + Math.pow(10, (P.rating - profile.rating) / 400));
@@ -659,28 +656,33 @@ function finish(ok, msg) {
 }
 function feedback(t, cls) { const f = $("feedback"); f.textContent = t; f.className = "feedback " + (cls || ""); }
 
+// Solution walkthrough: reset to the start, then each click plays the next move (yours, then the reply).
+let solSeq = null, solK = 0;
 function showSolution() {
   if (!P || busy || opponentBusy) return;
-  const p = P; loadPuzzle(p); result = "viewing"; render();
-  const line = []; let nd = p.t, st = G;
-  while (true) {
-    let m, r;
-    if (nd === 0) { m = winningMovesNow(st.cells, st.turn)[0]; if (m === undefined) break; line.push([m, -1]); break; }
-    [m, r] = nd[0]; line.push([m, r]);
-    st = applyMove(st, { slot: Math.floor(m / 12), t: m % 12 });
-    if (r < 0) break;
-    st = applyMove(st, { slot: Math.floor(r / 12), t: r % 12 }); nd = nd[0][2];
+  if (!solSeq) {
+    const p = P; loadPuzzle(p); result = "viewing";
+    const line = []; let nd = p.t, st = G;
+    while (true) {
+      let m, r;
+      if (nd === 0) { m = winningMovesNow(st.cells, st.turn)[0]; if (m !== undefined) line.push([m, -1]); break; }
+      [m, r] = nd[0]; line.push([m, r]);
+      st = applyMove(st, { slot: Math.floor(m / 12), t: m % 12 });
+      if (r < 0) break;
+      st = applyMove(st, { slot: Math.floor(r / 12), t: r % 12 }); nd = nd[0][2];
+    }
+    solSeq = []; line.forEach(([m, r]) => { solSeq.push(m); if (r >= 0) solSeq.push(r); });
+    solK = 0; feedback("Solution: click Next move to step through it.", ""); render(); return;
   }
-  const seq = []; line.forEach(([m, r]) => { seq.push(m); if (r >= 0) seq.push(r); });
-  feedback("Solution: " + seq.map(mvName).join("  "), "");
-  let k = 0;
-  const playNext = () => {
-    if (k >= seq.length) { render(); return; }
-    const m = seq[k++]; pending = Math.floor(m / 12); render();
-    const { face, dir } = TWISTS[m % 12];
-    setTimeout(() => commitLayer(face, dir, () => { G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; render(); setTimeout(playNext, 350); }), reduceMotion ? 0 : 450);
-  };
-  playNext();
+  if (solK >= solSeq.length) return;
+  const m = solSeq[solK++], mine = G.turn === me;
+  busy = true; pending = Math.floor(m / 12); render();
+  const { face, dir } = TWISTS[m % 12];
+  setTimeout(() => commitLayer(face, dir, () => {
+    G = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); pending = -1; busy = false;
+    feedback(solK >= solSeq.length ? "Solution complete." : mine ? "Your move. Click Next move for the opponent's reply." : "Opponent's reply. Click Next move.", "");
+    render();
+  }), reduceMotion ? 0 : 250);
 }
 
 /* ---------------- DOM ---------------- */
@@ -775,7 +777,9 @@ function render() {
     pending >= 0 ? "Now twist: drag a row of the cube, or use the arrows. Click your mark again to take it back." :
     "Place a mark and twist a face, in either order. Drag a row of the cube to twist it.";
   $("retry").hidden = !(result === "failed" || result === "viewing");
-  $("solution").hidden = result !== "failed";
+  $("solution").hidden = !(result === "failed" || (result === "viewing" && solSeq && solK < solSeq.length));
+  $("solution").textContent = result === "viewing" && solSeq ? "Next move (" + (solK + 1) + "/" + solSeq.length + ")" : "Show solution";
+  $("solution").disabled = busy;
   $("next").textContent = result ? "Next puzzle" : "Skip";
   const h = $("hist"); h.innerHTML = "";
   profile.history.slice(0, 12).forEach((x) => { const li = document.createElement("li"); li.className = x.ok ? "ok" : "no"; li.title = "Puzzle " + x.id + " (" + x.rating + ")"; li.textContent = (x.delta >= 0 ? "+" : "") + x.delta; h.appendChild(li); });
