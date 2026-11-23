@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Twist Opening Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+
+/* Layout: the cube stage leads on the left, a control rail (status, net, face turns, log) sits right; stacks to one column under 880px. */
+:root {
+  --bg: #e6e9ee;
+  --surface: #f5f6f8;
+  --fg: #1a1e26;
+  --muted: #5a616d;
+  --line: #cdd2da;
+  --x: #2545c4;
+  --o: #c8601a;
+  --win: #e7b416;
+  --tile: #f3f0e8;
+  --tile-hi: #cdd8ff;
+  --tile-hint: #ffdf9e;
+  --cube-body: #1c1f25;
+  --stage-a: #f4f6f9;
+  --stage-b: #d9dee6;
+  --focus: #2545c4;
+  --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111318; --surface: #1a1d23; --fg: #e6e8ed; --muted: #9ba2ae; --line: #2c3039;
+    --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675; --tile-hint: #5c4a1f;
+    --cube-body: #2c3039; --stage-a: #1e2229; --stage-b: #0f1115; --focus: #8299ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111318; --surface: #1a1d23; --fg: #e6e8ed; --muted: #9ba2ae; --line: #2c3039;
+  --x: #8299ff; --o: #ff9c52; --win: #f0c43c; --tile: #2a2e37; --tile-hi: #3a4675; --tile-hint: #5c4a1f;
+  --cube-body: #2c3039; --stage-a: #1e2229; --stage-b: #0f1115; --focus: #8299ff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font-body); }
+.wrap {
+  max-width: 1200px; margin: 0 auto;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1 { font: 700 clamp(26px, 4.4vw, 40px)/1.05 var(--font-display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h2 { font: 600 12px/1 var(--font-body); text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 0 0 10px; }
+h3 { font: 600 17px/1.3 var(--font-display); margin: 0 0 10px; letter-spacing: -0.01em; }
+
+.game { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 880px) { .game { grid-template-columns: minmax(0, 1fr); } }
+
+.stage {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 680px; max-width: 100%;
+  border-radius: 18px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 35%, var(--stage-a), var(--stage-b));
+  border: 1px solid var(--line);
+}
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.stage canvas.dragging { cursor: grabbing; }
+.stage canvas.pointing { cursor: pointer; }
+.hint { position: absolute; left: 14px; top: 12px; font: 12px/1.3 var(--font-body); color: var(--muted); pointer-events: none; }
+.view-btn { position: absolute; right: 12px; top: 10px; }
+.banner {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  width: min(92%, 420px); background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.18);
+}
+.banner .big { font: 700 30px/1 var(--font-display); }
+.banner .txt { flex: 1; min-width: 0; }
+.banner .txt strong { display: block; font: 600 16px/1.25 var(--font-display); }
+.banner .txt span { color: var(--muted); font-size: 13px; }
+
+.rail { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+
+.status { display: flex; align-items: center; gap: 14px; }
+.chip { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; font: 700 26px/1 var(--font-display); background: var(--tile); flex: none; }
+.chip.p1 { color: var(--x); box-shadow: inset 0 0 0 2px var(--x); }
+.chip.p2 { color: var(--o); box-shadow: inset 0 0 0 2px var(--o); }
+.status .who { font: 600 18px/1.2 var(--font-display); }
+.status .sub { color: var(--muted); font-size: 13px; }
+.status-text { min-width: 0; }
+.steps { display: flex; gap: 6px; margin-top: 12px; }
+.step { flex: 1; font: 500 12px/1 var(--font-body); padding: 7px 8px; border-radius: 8px; border: 1px solid var(--line); color: var(--muted); text-align: center; }
+.step.on { border-color: var(--fg); color: var(--fg); background: var(--bg); }
+.step.done { color: var(--muted); text-decoration: line-through; }
+
+button.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button.primary:hover:not(:disabled) { opacity: .9; }
+.controls-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+button, select {
+  font: 500 13px/1 var(--font-body); color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 12px; cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { opacity: .38; cursor: not-allowed; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.score { display: flex; gap: 14px; margin-left: auto; font: 500 13px/1 var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.score b { color: var(--fg); font-weight: 500; }
+
+/* Net: unfolded cube, clickable */
+.net { --cs: clamp(17px, 5.6vw, 30px); display: grid; grid-template-columns: repeat(4, auto); grid-template-rows: repeat(3, auto); gap: 4px; justify-content: center; }
+.nf { display: grid; grid-template-columns: repeat(3, var(--cs)); gap: 2px; padding: 3px; background: var(--cube-body); border-radius: 6px; }
+.nfw[data-face="U"] { grid-area: 1 / 2; } .nfw[data-face="L"] { grid-area: 2 / 1; } .nfw[data-face="F"] { grid-area: 2 / 2; }
+.nfw[data-face="R"] { grid-area: 2 / 3; } .nfw[data-face="B"] { grid-area: 2 / 4; } .nfw[data-face="D"] { grid-area: 3 / 2; }
+.nfw { display: flex; flex-direction: column; gap: 3px; }
+.nbar { display: flex; align-items: center; justify-content: space-between; }
+.nbar button { width: calc(var(--cs) * .95); height: calc(var(--cs) * .95); padding: 0; border-radius: 50%; font-size: calc(var(--cs) * .62); line-height: 1; display: grid; place-items: center; }
+.nbar button:not(:disabled) { border-color: var(--fg); }
+.nbar span { font: 600 calc(var(--cs) * .5)/1 var(--font-mono); color: var(--muted); }
+.cell {
+  width: var(--cs); height: var(--cs); padding: 0; border: 0; border-radius: 3px; background: var(--tile);
+  display: grid; place-items: center; font: 700 calc(var(--cs) * .56)/1 var(--font-display);
+}
+.cell.m1 { color: var(--x); } .cell.m2 { color: var(--o); }
+.cell.hi { background: var(--tile-hi); }
+.cell.hinted { background: var(--tile-hint); }
+.cell.hinted2 { background: color-mix(in srgb, var(--tile-hint) 40%, var(--tile)); }
+.cell.win { background: var(--win); color: #1a1e26; }
+.cell.pending { box-shadow: inset 0 0 0 2px currentColor; }
+.cell[data-label]:empty::after { content: attr(data-label); font: 500 calc(var(--cs) * .42)/1 var(--font-mono); color: var(--muted); opacity: .75; }
+.cell:disabled, .cell.off { opacity: 1; cursor: default; }
+.net { touch-action: none; user-select: none; -webkit-user-select: none; }
+.net-caption { margin: 10px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+
+/* Face turn pads */
+.pads { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pad { display: flex; align-items: center; justify-content: space-between; gap: 4px; border: 1px solid var(--line); border-radius: 12px; padding: 4px; background: var(--bg); }
+.pad button { width: 34px; height: 34px; padding: 0; font-size: 18px; border-radius: 9px; background: var(--surface); flex: none; }
+.pad .fl { text-align: center; font: 700 16px/1 var(--font-display); min-width: 0; }
+.pad .fl small { display: block; font: 500 10px/1.2 var(--font-body); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-top: 3px; }
+.turn-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); min-height: 1.5em; }
+
+.log { font: 13px/1.6 var(--font-mono); max-height: 132px; overflow-y: auto; margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 2px 12px; font-variant-numeric: tabular-nums; }
+.log li { white-space: nowrap; }
+.log .n { color: var(--muted); }
+.log .p1 { color: var(--x); } .log .p2 { color: var(--o); }
+.log-empty { color: var(--muted); font-size: 13px; margin: 0; }
+
+.rules { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; margin-top: 28px; }
+@media (max-width: 760px) { .rules { grid-template-columns: minmax(0, 1fr); } }
+.rules ol { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.rules li { max-width: 62ch; }
+.rules p { margin: 0 0 8px; max-width: 62ch; }
+.mono { font-family: var(--font-mono); font-size: .92em; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+
+/* Explorer additions */
+:root { --draw: #aab0ba; --bar-fg: #ffffff; --bar-fg-draw: #1a1e26; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --draw: #6a717d; --bar-fg: #0f1115; --bar-fg-draw: #f1f3f7; } }
+:root[data-theme="dark"] { --draw: #6a717d; --bar-fg: #0f1115; --bar-fg-draw: #f1f3f7; }
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.sitenav { display: flex; gap: 14px; font: 500 13px/1 var(--font-body); }
+.sitenav a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.sitenav a:hover { color: var(--fg); border-color: var(--fg); }
+.sitenav span { color: var(--fg); border-bottom: 1px solid var(--fg); padding-bottom: 2px; }
+.errbar { background: color-mix(in srgb, var(--o) 16%, var(--surface)); border: 1px solid var(--o); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+.pos-head { display: flex; align-items: center; gap: 14px; }
+.pos-head .who { font: 600 18px/1.2 var(--font-display); }
+.pos-head .sub { color: var(--muted); font-size: 13px; }
+@media (min-width: 881px) { .stage { position: sticky; top: 16px; } }
+.stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font: 500 13px/1.2 var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 500; }
+.bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; background: var(--line); font: 500 11px/22px var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar > span { display: block; white-space: nowrap; overflow: hidden; text-align: center; min-width: 0; }
+.bar .bx { background: var(--x); color: var(--bar-fg); }
+.bar .bd { background: var(--draw); color: var(--bar-fg-draw); }
+.bar .bo { background: var(--o); color: var(--bar-fg); }
+.bar.total { margin-top: 12px; height: 26px; line-height: 26px; font-size: 12px; }
+.orbit { margin: 10px 0 0; font-size: 12px; color: var(--muted); min-height: 1.2em; }
+.moves { display: flex; flex-direction: column; gap: 2px; margin: 0 -6px; max-height: 440px; overflow-y: auto; }
+.moves-head, .mv { display: grid; grid-template-columns: minmax(5.6em, 6.6em) 3.4em minmax(0, 1fr); align-items: center; gap: 10px; }
+.moves-head { padding: 0 8px 6px; font: 600 11px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.mv { width: 100%; text-align: left; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; font: 500 14px/1.2 var(--font-mono); color: var(--fg); cursor: pointer; }
+.mv:hover:not(:disabled), .mv:focus-visible { background: var(--bg); }
+.mv .mt { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.mv .eq { font: 500 10px/1 var(--font-body); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 5px; white-space: nowrap; }
+.mv .win { font: 600 10px/1 var(--font-body); color: var(--win); text-transform: uppercase; letter-spacing: .05em; }
+.mv .sh { color: var(--muted); font-variant-numeric: tabular-nums; }
+.mv:disabled { opacity: .5; cursor: default; }
+.empty-note { margin: 0; font-size: 14px; color: var(--muted); }
+.ctl { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.ctl button { min-width: 44px; }
+.line { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; font: 13px/1.6 var(--font-mono); font-variant-numeric: tabular-nums; }
+.line li { white-space: nowrap; display: inline-flex; gap: 6px; align-items: baseline; }
+.line .n { color: var(--muted); }
+.line button { border: 0; background: transparent; padding: 1px 5px; border-radius: 6px; font: inherit; }
+.line button.p1 { color: var(--x); } .line button.p2 { color: var(--o); }
+.line button.on { background: var(--fg); color: var(--bg); }
+.line button.fut { opacity: .5; }
+.about { margin-top: 24px; max-width: 70ch; }
+.about summary { cursor: pointer; font: 600 12px/1 var(--font-body); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); padding: 6px 0; }
+.about p { margin: 8px 0 0; }
+.legend { margin: 10px 0 0; font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Twist Opening Explorer</h1>
+    <nav class="sitenav" aria-label="Pages"><a href="../tactics/">Tactics</a><span aria-current="page">Opening explorer</span></nav>
+  </header>
+  <div class="errbar" id="err" role="alert" hidden></div>
+  <section class="game">
+    <div class="stage" id="stage">
+      <div class="hint" id="hint">Drag a row to twist · drag the background to orbit</div>
+      <button class="view-btn" id="resetView" type="button">Reset view</button>
+    </div>
+
+    <div class="rail">
+      <div class="panel">
+        <div class="pos-head">
+          <div class="chip p1" id="chip">X</div>
+          <div class="status-text">
+            <div class="who" id="who">Loading data…</div>
+            <div class="sub" id="sub"></div>
+          </div>
+        </div>
+        <div class="bar total" id="totalBar" aria-hidden="true"></div>
+        <div class="stats" id="stats"></div>
+        <p class="orbit" id="orbit"></p>
+        <div class="ctl">
+          <button type="button" id="bStart" title="Start (Home)">⏮ Start</button>
+          <button type="button" id="bBack" title="Back (Left arrow)">◀ Back</button>
+          <button type="button" id="bFwd" title="Forward (Right arrow)">Forward ▶</button>
+          <button type="button" id="bEnd" title="End">End ⏭</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Moves from here</h2>
+        <div class="moves-head" aria-hidden="true"><span>Move</span><span id="shHead">Games</span><span>X wins · draws · O wins</span></div>
+        <div class="moves" id="moves"></div>
+        <div class="legend"><span><i style="background:var(--x)"></i>X wins</span><span><i style="background:var(--draw)"></i>Draw</span><span><i style="background:var(--o)"></i>O wins</span></div>
+      </div>
+
+      <div class="panel">
+        <h2>Unfolded cube</h2>
+        <div class="net" id="net"></div>
+        <p class="turn-note" id="turnNote"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Line played</h2>
+        <ol class="line" id="line"></ol>
+        <p class="empty-note" id="lineEmpty">No moves yet. Place a mark, then twist a face, or click a move above.</p>
+      </div>
+    </div>
+  </section>
+
+  <details class="about" id="about">
+    <summary>About these numbers</summary>
+    <p id="aboutText"></p>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="canon.js"></script>
+<script>
+(function () {
+"use strict";
+
+const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const coarse = window.matchMedia && matchMedia("(hover: none)").matches;
+/* ---------------- Geometry of the board ---------------- */
+const V = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  key: (a) => a.map((x) => (x === 0 ? 0 : x)).join(",")
+};
+const FACES = {
+  U: { n: [0, 1, 0], r: [1, 0, 0], d: [0, 0, 1], name: "Up" },
+  L: { n: [-1, 0, 0], r: [0, 0, 1], d: [0, -1, 0], name: "Left" },
+  F: { n: [0, 0, 1], r: [1, 0, 0], d: [0, -1, 0], name: "Front" },
+  R: { n: [1, 0, 0], r: [0, 0, -1], d: [0, -1, 0], name: "Right" },
+  B: { n: [0, 0, -1], r: [-1, 0, 0], d: [0, -1, 0], name: "Back" },
+  D: { n: [0, -1, 0], r: [1, 0, 0], d: [0, 0, -1], name: "Down" }
+};
+const ORDER = ["U", "L", "F", "R", "B", "D"];
+const SLOTS = [];
+const slotIndex = new Map();
+ORDER.forEach((f) => {
+  const { n, r, d } = FACES[f];
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 3; col++) {
+    const p = V.add(V.add(n, V.mul(r, col - 1)), V.mul(d, row - 1));
+    const i = SLOTS.length;
+    SLOTS.push({ i, face: f, row, col, p, n });
+    slotIndex.set(V.key(p) + "|" + V.key(n), i);
+  }
+});
+function rotV(v, n, s) { return V.add(V.mul(V.cross(n, v), s), V.mul(n, V.dot(n, v))); }
+// 12 twists: index = faceIndex*2 + (0 cw, 1 ccw). PERM[t][i] = where the mark on square i ends up.
+const TWISTS = [];
+ORDER.forEach((f) => ["cw", "ccw"].forEach((dir) => TWISTS.push({ face: f, dir })));
+const PERM = TWISTS.map(({ face, dir }) => {
+  const n = FACES[face].n, s = dir === "cw" ? -1 : 1;
+  return SLOTS.map((sl) => V.dot(sl.p, n) !== 1 ? sl.i : slotIndex.get(V.key(rotV(sl.p, n, s)) + "|" + V.key(rotV(sl.n, n, s))));
+});
+const twistIndex = (face, dir) => ORDER.indexOf(face) * 2 + (dir === "cw" ? 0 : 1);
+function inLayer(sl, f) { return V.dot(sl.p, FACES[f].n) === 1; }
+const LINES = [];
+ORDER.forEach((f, fi) => {
+  const b = fi * 9;
+  for (let k = 0; k < 3; k++) { LINES.push([b + k * 3, b + k * 3 + 1, b + k * 3 + 2]); LINES.push([b + k, b + k + 3, b + k + 6]); }
+  LINES.push([b, b + 4, b + 8]); LINES.push([b + 2, b + 4, b + 6]);
+});
+const LINES_OF = SLOTS.map(() => []);
+LINES.forEach((L, li) => L.forEach((c) => LINES_OF[c].push(li)));
+
+/* ---------------- Rules engine (pure) ---------------- */
+// A move is { slot, t }: place on `slot`, then apply twist t.
+function newState() { return { cells: new Array(54).fill(0), turn: 1, last: null, winner: 0, winLines: [], draw: false, ply: 0 }; }
+function twistCells(cells, t) { const p = PERM[t], nc = new Array(54); for (let i = 0; i < 54; i++) nc[p[i]] = cells[i]; return nc; }
+function linesOf(cells, p) { const r = []; for (const L of LINES) if (cells[L[0]] === p && cells[L[1]] === p && cells[L[2]] === p) r.push(L); return r; }
+function applyMove(s, mv) {
+  const me = s.turn, opp = 3 - me;
+  const placed = s.cells.slice(); placed[mv.slot] = me;
+  const cells = twistCells(placed, mv.t);
+  const t = { cells, turn: opp, last: { slot: mv.slot, t: mv.t, by: me, landed: PERM[mv.t][mv.slot] }, winner: 0, winLines: [], draw: false, ply: s.ply + 1 };
+  const mine = linesOf(cells, me), theirs = linesOf(cells, opp);
+  if (mine.length >= 2) { t.winner = me; t.winLines = mine; }
+  else if (theirs.length >= 2) { t.winner = opp; t.winLines = theirs; }
+  else if (cells.every((c) => c)) t.draw = true;
+  return t;
+}
+const over = (s) => !!(s.winner || s.draw);
+
+/* ---------------- Computer opponent ----------------
+   Line values from the mover's view: completed lines persist and count toward the two needed. */
+const VAL = (() => { const v = []; for (let a = 0; a <= 3; a++) { v.push([]); for (let b = 0; b <= 3; b++) {
+  let x = 0;
+  if (a === 3) x += 30; if (b === 3) x -= 34;
+  if (b === 0 && a < 3) x += a === 2 ? 8 : a === 1 ? 1 : 0;
+  if (a === 0 && b < 3) x -= b === 2 ? 10 : b === 1 ? 1 : 0;
+  v[a].push(x); } } return v; })();
+// Everything about the 648 replies of the side to move in one pass per twist.
+// cb(slot, t, outcome, delta) with outcome +1 mover wins, -1 mover loses, 2 draw, 0 none, and delta
+// the change in `me`'s evaluation (me = fixed viewpoint player) after that reply.
+function scanMoves(cells, mover, me, cb) {
+  const opp = 3 - mover, empty = []; for (let i = 0; i < 54; i++) if (!cells[i]) empty.push(i);
+  for (let t = 0; t < 12; t++) {
+    const tc = twistCells(cells, t);
+    const ca = new Int8Array(48), cb2 = new Int8Array(48);   // counts for `me` and the other player
+    let base = 0, fm = 0, fo = 0;
+    for (let li = 0; li < 48; li++) {
+      const L = LINES[li]; let a = 0, b = 0;
+      for (const c of L) { if (tc[c] === me) a++; else if (tc[c]) b++; }
+      ca[li] = a; cb2[li] = b; base += VAL[a][b];
+      if (a === 3) { if (me === mover) fm++; else fo++; }
+      if (b === 3) { if (me === mover) fo++; else fm++; }
+    }
+    for (const c of empty) {
+      const p = PERM[t][c]; let delta = base, add = 0;
+      for (const li of LINES_OF[p]) {
+        const a = ca[li], b = cb2[li];
+        if (mover === me) { delta += VAL[a + 1][b] - VAL[a][b]; if (a + 1 === 3) add++; }
+        else { delta += VAL[a][b + 1] - VAL[a][b]; if (b + 1 === 3) add++; }
+      }
+      const out = fm + add >= 2 ? 1 : fo >= 2 ? -1 : empty.length === 1 ? 2 : 0;
+      cb(c, t, out, delta);
+    }
+  }
+}
+
+/* ---------------- 3D scene ---------------- */
+let renderer, scene, camera, root, pivot, bodyMat, raycaster, stage, canvas;
+const bodies = [], stickers = [];
+let layer = null;
+const HOME = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.52, -0.68, 0, "XYZ"));
+const texCache = new Map();
+
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function drawMark(g, m, alpha) {
+  g.save(); g.globalAlpha = alpha; g.lineCap = "round"; g.lineWidth = 15;
+  if (m === 1) { g.strokeStyle = "#2545c4"; g.beginPath(); g.moveTo(38, 38); g.lineTo(90, 90); g.moveTo(90, 38); g.lineTo(38, 90); g.stroke(); }
+  else { g.strokeStyle = "#c8601a"; g.beginPath(); g.arc(64, 64, 28, 0, Math.PI * 2); g.stroke(); }
+  g.restore();
+}
+// mark: committed or pending mark; ghost: hover preview; ring: outline (pending mark or last landed mark)
+function tex(mark, ghost, win, ring) {
+  const k = [mark, ghost, win ? 1 : 0, ring ? 1 : 0].join("");
+  if (texCache.has(k)) return texCache.get(k);
+  const c = document.createElement("canvas"); c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = win ? "#f0c43c" : "#f3f0e8"; roundRect(g, 2, 2, 124, 124, 18); g.fill();
+  if (ring) { g.lineWidth = 5; g.strokeStyle = mark === 1 ? "rgba(37,69,196,.6)" : "rgba(200,96,26,.65)"; roundRect(g, 9, 9, 110, 110, 13); g.stroke(); }
+  if (mark) drawMark(g, mark, 1); else if (ghost) drawMark(g, ghost % 10, ghost > 10 ? 0.15 : 0.32);
+  const t = new THREE.CanvasTexture(c);
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  texCache.set(k, t); return t;
+}
+function labelSprite(text) {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d");
+  g.fillStyle = "#8b919c"; g.font = "600 40px 'IBM Plex Mono', monospace"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(text, 32, 34);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
+  s.scale.set(0.42, 0.42, 0.42); return s;
+}
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function applyTheme() { if (bodyMat) bodyMat.color.set(cssVar("--cube-body") || "#1c1f25"); }
+
+function initScene() {
+  stage = document.getElementById("stage");
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  canvas = renderer.domElement;
+  stage.insertBefore(canvas, stage.firstChild);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  camera.position.set(0, 0, 10);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.68));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.5); dl.position.set(3, 5, 7); scene.add(dl);
+  root = new THREE.Group(); root.quaternion.copy(HOME); scene.add(root);
+  pivot = new THREE.Group(); root.add(pivot);
+  raycaster = new THREE.Raycaster();
+
+  bodyMat = new THREE.MeshLambertMaterial({ color: 0x1c1f25 });
+  applyTheme();
+  const boxGeo = new THREE.BoxGeometry(0.97, 0.97, 0.97);
+  for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+    if (!x && !y && !z) continue;
+    const b = new THREE.Mesh(boxGeo, bodyMat); b.userData.p = [x, y, z]; b.position.set(x, y, z);
+    root.add(b); bodies.push(b);
+  }
+  const stGeo = new THREE.PlaneGeometry(0.86, 0.86);
+  SLOTS.forEach((sl) => {
+    const m = new THREE.Mesh(stGeo, new THREE.MeshLambertMaterial({ map: tex(0, 0, false, false), transparent: true, alphaTest: 0.5 }));
+    m.userData.slot = sl.i; placeSticker(m); root.add(m); stickers.push(m);
+  });
+  ORDER.forEach((f) => { const s = labelSprite(f); s.position.set(...V.mul(FACES[f].n, 2.15)); root.add(s); });
+
+  new ResizeObserver(resize).observe(stage); resize();
+  if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
+  bindPointer();
+  let lastT = performance.now();
+  (function frame(t) {
+    const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+    stepLayer(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  })(lastT);
+}
+const Z = new THREE.Vector3(0, 0, 1);
+function placeSticker(m) {
+  const sl = SLOTS[m.userData.slot];
+  m.position.set(...V.add(sl.p, V.mul(sl.n, 0.492)));
+  m.quaternion.setFromUnitVectors(Z, new THREE.Vector3(...sl.n));
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  const need = 6.1;
+  const vfov = w >= h ? 34 : 2 * Math.atan(Math.tan((34 * Math.PI) / 360) / camera.aspect) * (180 / Math.PI);
+  camera.fov = Math.min(70, vfov); camera.position.z = need / 2 / Math.tan((camera.fov * Math.PI) / 360) + 0.2;
+  camera.updateProjectionMatrix();
+}
+
+/* Layer animation: preview tilt on hover, quarter turn on commit */
+function grabLayer(f) {
+  releaseLayer();
+  const n = FACES[f].n;
+  const items = bodies.filter((b) => V.dot(b.userData.p, n) === 1).concat(stickers.filter((m) => inLayer(SLOTS[m.userData.slot], f)));
+  pivot.quaternion.identity();
+  items.forEach((o) => pivot.add(o));
+  layer = { face: f, items, axis: new THREE.Vector3(...n), angle: 0, target: 0, commit: null };
+}
+function releaseLayer() {
+  if (!layer) return;
+  layer.items.forEach((o) => {
+    root.add(o);
+    if (o.userData.p) { o.position.set(...o.userData.p); o.quaternion.identity(); } else placeSticker(o);
+  });
+  pivot.quaternion.identity(); layer = null;
+}
+function previewLayer(f, dir) {
+  if (reduceMotion || busy || !canAct()) return;
+  if (!layer || layer.face !== f) grabLayer(f);
+  layer.target = (dir === "cw" ? -1 : 1) * 0.22;
+}
+function clearPreview() { if (layer && !layer.commit) layer.target = 0; }
+function commitLayer(f, dir, cb) {
+  if (reduceMotion) { releaseLayer(); cb(); return; }
+  if (!layer || layer.face !== f) grabLayer(f);
+  layer.target = (dir === "cw" ? -1 : 1) * Math.PI / 2;
+  layer.commit = cb;
+}
+function stepLayer(dt) {
+  if (!layer) return;
+  const k = 1 - Math.exp(-dt * (layer.commit ? 15 : 18));
+  layer.angle += (layer.target - layer.angle) * k;
+  if (Math.abs(layer.target - layer.angle) < 0.004) layer.angle = layer.target;
+  pivot.quaternion.setFromAxisAngle(layer.axis, layer.angle);
+  if (layer.angle === layer.target) {
+    if (layer.commit) { const cb = layer.commit; releaseLayer(); cb(); }
+    else if (layer.target === 0) releaseLayer();
+  }
+}
+
+/* Pointer: drag to orbit, click or tap an empty square to place this turn's mark */
+const ndc = new THREE.Vector2();
+function pick(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(bodies.concat(stickers), false)[0];
+  return hit && hit.object.userData.slot !== undefined ? hit.object.userData.slot : -1;
+}
+const FACE_BY_NORMAL = {}; ORDER.forEach((f) => (FACE_BY_NORMAL[FACES[f].n.join(",")] = f));
+function screenOf(v) { const w = new THREE.Vector3(v[0], v[1], v[2]); root.localToWorld(w); w.project(camera); const r = canvas.getBoundingClientRect(); return [(w.x + 1) / 2 * r.width, (1 - w.y) / 2 * r.height]; }
+// Work out which face a drag on sticker `slot` turns: the drag direction is snapped to one of the sticker's two
+// in-plane axes d; dragging along d rotates about A = n x d, and the turning layer is the one holding the sticker.
+function setupSlide(drag, dx, dy) {
+  const sl = SLOTS[drag.slot], n = sl.n, c = V.add(sl.p, V.mul(n, 0.5)), p0 = screenOf(c);
+  const len = Math.hypot(dx, dy); let best = null;
+  for (let k = 0; k < 3; k++) {
+    if (n[k] !== 0) continue;
+    const u = [0, 0, 0]; u[k] = 1;
+    const p1 = screenOf(V.add(c, V.mul(u, 0.5))), sx = p1[0] - p0[0], sy = p1[1] - p0[1], sl2 = Math.hypot(sx, sy) || 1;
+    const dot = (dx * sx + dy * sy) / (sl2 * len);
+    if (!best || Math.abs(dot) > Math.abs(best.dot)) best = { u, dot, sx: sx / sl2, sy: sy / sl2, px: sl2 * 2 };
+  }
+  const sg = best.dot >= 0 ? 1 : -1, d = V.mul(best.u, sg), A = V.cross(n, d);
+  const layerSide = V.dot(sl.p, A);                 // -1, 0 (middle slice: not a legal turn) or +1
+  if (layerSide === 0) return false;
+  const face = FACE_BY_NORMAL[V.mul(A, layerSide).map((x) => (x === 0 ? 0 : x)).join(",")];
+  if (!face) return false;
+  Object.assign(drag, { face, ux: best.sx * sg, uy: best.sy * sg, sign: layerSide, ppq: Math.max(40, best.px * 1.3), ang: 0 });
+  if (!layer || layer.face !== face) grabLayer(face);
+  highlightFace = face; renderStickers(); renderNet();
+  return true;
+}
+// Net slide: a drag along a row or column of a net face. On the net, screen-right is the face's r axis and
+// screen-down its d axis, so the drag maps to a 3D direction and the same rule as on the cube picks the face.
+function setupNetSlide(nd, dx, dy, cellPx) {
+  const sl = SLOTS[nd.slot], F = FACES[sl.face], horiz = Math.abs(dx) >= Math.abs(dy);
+  const sg = horiz ? Math.sign(dx) : Math.sign(dy), d = V.mul(horiz ? F.r : F.d, sg), A = V.cross(sl.n, d);
+  const layerSide = V.dot(sl.p, A);
+  if (layerSide === 0) return false;
+  const face = FACE_BY_NORMAL[V.mul(A, layerSide).map((x) => (x === 0 ? 0 : x)).join(",")];
+  if (!face) return false;
+  Object.assign(nd, { face, ux: horiz ? sg : 0, uy: horiz ? 0 : sg, sign: layerSide, ppq: cellPx * 2.6, ang: 0 });
+  if (!layer || layer.face !== face) grabLayer(face);
+  highlightFace = face; renderStickers(); renderNet();
+  return true;
+}
+function bindNetSlide() {
+  const net = $("net"); let nd = null, swallow = false;
+  net.addEventListener("pointerdown", (e) => {
+    swallow = false;
+    const cell = e.target.closest(".cell");
+    if (!cell || !canAct() || reduceMotion) return;
+    nd = { slot: +cell.id.slice(5), sx: e.clientX, sy: e.clientY, mode: "maybe", px: cell.getBoundingClientRect().width };
+  });
+  net.addEventListener("pointermove", (e) => {
+    if (!nd) return;
+    const dx = e.clientX - nd.sx, dy = e.clientY - nd.sy;
+    if (nd.mode === "maybe" && Math.hypot(dx, dy) > 8) {
+      nd.mode = setupNetSlide(nd, dx, dy, nd.px) ? "slide" : "none";
+      if (nd.mode === "slide") { try { net.setPointerCapture(e.pointerId); } catch (err) {} setHover(-1); }
+    }
+    if (nd.mode !== "slide") return;
+    e.preventDefault();
+    const t = Math.max(-1, Math.min(1, (dx * nd.ux + dy * nd.uy) / nd.ppq));
+    nd.ang = t * Math.PI / 2 * nd.sign;
+    if (layer && !layer.commit) { layer.angle = layer.target = nd.ang; pivot.quaternion.setFromAxisAngle(layer.axis, nd.ang); }
+  });
+  const end = (e) => {
+    if (!nd) return;
+    const d = nd; nd = null;
+    if (d.mode === "maybe") return;           // a tap: let the click place the mark
+    swallow = true;
+    if (d.mode === "slide") {
+      highlightFace = null;
+      if (Math.abs(d.ang) > Math.PI / 8 && e.type !== "pointercancel") chooseTwist(d.face, d.ang > 0 ? "ccw" : "cw");
+      else { clearPreview(); renderStickers(); renderNet(); }
+    }
+  };
+  net.addEventListener("pointerup", end);
+  net.addEventListener("pointercancel", end);
+  net.addEventListener("click", (e) => { if (swallow) { swallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
+}
+function bindPointer() {
+  let drag = null;
+  const AX = new THREE.Vector3(1, 0, 0), AY = new THREE.Vector3(0, 1, 0), q = new THREE.Quaternion();
+  canvas.addEventListener("pointerdown", (e) => {
+    const s = pick(e);
+    drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, slot: s, mode: s >= 0 && canAct() && !reduceMotion ? "maybe" : "orbit" };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (drag) {
+      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      if (!drag.moved && Math.hypot(dx, dy) > 7) {
+        drag.moved = true; canvas.classList.add("dragging"); setHover(-1);
+        if (drag.mode === "maybe") drag.mode = setupSlide(drag, dx, dy) ? "slide" : "orbit";
+      }
+      if (!drag.moved) return;
+      if (drag.mode === "slide") {
+        const t = Math.max(-1, Math.min(1, (dx * drag.ux + dy * drag.uy) / drag.ppq));
+        drag.ang = t * Math.PI / 2 * drag.sign;
+        if (layer && !layer.commit) { layer.angle = layer.target = drag.ang; pivot.quaternion.setFromAxisAngle(layer.axis, drag.ang); }
+      } else {
+        root.quaternion.premultiply(q.setFromAxisAngle(AY, (e.clientX - drag.x) * 0.009));
+        root.quaternion.premultiply(q.setFromAxisAngle(AX, (e.clientY - drag.y) * 0.009));
+      }
+      drag.x = e.clientX; drag.y = e.clientY;
+      return;
+    }
+    if (e.pointerType === "mouse") {
+      const s = pick(e);
+      const ok = s >= 0 && canAct() && !shownCells()[s];
+      canvas.classList.toggle("pointing", ok);
+      setHover(ok ? s : -1);
+    }
+  });
+  const end = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null; canvas.classList.remove("dragging");
+    if (d.mode === "slide") {
+      highlightFace = null;
+      if (Math.abs(d.ang) > Math.PI / 8 && e.type !== "pointercancel") chooseTwist(d.face, d.ang > 0 ? "ccw" : "cw");
+      else { clearPreview(); renderStickers(); renderNet(); }
+      return;
+    }
+    if (d.moved || e.type === "pointercancel") return;
+    const s = pick(e);
+    if (s >= 0) choosePlace(s);
+  };
+  canvas.addEventListener("pointerup", end);
+  canvas.addEventListener("pointercancel", end);
+  canvas.addEventListener("pointerleave", () => { if (!drag) setHover(-1); });
+  document.getElementById("resetView").addEventListener("click", () => root.quaternion.copy(HOME));
+}
+function setHover(s) { if (hoverSlot !== s) { hoverSlot = s; renderStickers(); renderNet(); } }
+
+
+/* ---------------- Explorer state ---------------- */
+const $ = (id) => document.getElementById(id);
+let SYM = null, DATA = null, CANON = null;
+let hist = [], states = [newState()], idx = 0;
+let G = states[0], pending = -1, pendingTwist = null, busy = false, hoverSlot = -1, highlightFace = null;
+let previewCells = new Set(), previewFaces = new Set(), previewRep = -1, previewRepFace = "";
+let rows = [], lastMs = 0, curKey = "0.0.0", hasEdge = false;
+const INV = PERM.map((p) => { const q = new Array(54); p.forEach((j, i) => (q[j] = i)); return q; });
+const P_ = (p) => (p === 1 ? "X" : "O");
+function canAct() { return !busy && !over(G); }
+function cellName(i) { const sl = SLOTS[i]; return sl.face + (sl.row * 3 + sl.col + 1); }
+function twistName(t) { const { face, dir } = TWISTS[t]; return face + (dir === "ccw" ? "'" : ""); }
+const mvName = (m) => cellName(Math.floor(m / 12)) + "+" + twistName(m % 12);
+function shownCells() { let c = pendingTwist !== null ? twistCells(G.cells, pendingTwist) : G.cells; if (pending >= 0) { c = c.slice(); c[pending] = G.turn; } return c; }
+const previewOn = () => previewCells.size > 0 && pending < 0 && pendingTwist === null;
+
+/* ---------------- Moves and history ---------------- */
+// A turn is one mark and one twist, in either order: placing on c then twisting t gives the same board as
+// twisting t then placing on PERM[t][c], so a twist-first turn is recorded as the move (INV[t][square], t).
+function choosePlace(i) {
+  if (!canAct() || shownCells()[i]) return;
+  if (pendingTwist !== null) { const t = pendingTwist; pendingTwist = null; playMove(INV[t][i] * 12 + t); return; }
+  pending = pending === i ? -1 : i; render();
+}
+function chooseTwist(face, dir) {
+  if (!canAct()) { clearPreview(); return; }
+  const t = twistIndex(face, dir);
+  if (pending >= 0) {
+    const m = pending * 12 + t;
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; pending = -1; playMove(m); });
+  } else if (pendingTwist === null) {
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; pendingTwist = t; render(); });
+  } else if (pendingTwist === (t ^ 1)) {
+    busy = true; highlightFace = null; render();
+    commitLayer(face, dir, () => { busy = false; pendingTwist = null; render(); });
+  } else {
+    clearPreview(); setNote("One twist per turn. Turn " + TWISTS[pendingTwist].face + " back to undo it first."); render();
+  }
+}
+let noteOverride = "";
+function setNote(t) { noteOverride = t; }
+function playMove(m) {
+  noteOverride = "";
+  if (!(idx < hist.length && hist[idx] === m)) {
+    hist.length = idx; states.length = idx + 1; hist.push(m);
+    states.push(applyMove(states[idx], { slot: Math.floor(m / 12), t: m % 12 }));
+  }
+  idx++; G = states[idx]; pending = -1; pendingTwist = null; clearPreviewSets(); refresh();
+}
+function goTo(k) {
+  if (busy) return;
+  releaseLayer(); noteOverride = ""; idx = Math.max(0, Math.min(hist.length, k)); G = states[idx];
+  pending = -1; pendingTwist = null; clearPreviewSets(); refresh();
+}
+// Animated: place the mark, turn the face, then record the move.
+function playAnimated(m) {
+  if (busy || over(G)) return;
+  clearPreviewSets(); pendingTwist = null;
+  const { face, dir } = TWISTS[m % 12];
+  if (reduceMotion) { playMove(m); return; }
+  busy = true; pending = Math.floor(m / 12); render();
+  setTimeout(() => commitLayer(face, dir, () => { busy = false; playMove(m); }), 220);
+}
+function stepForward() { if (!busy && idx < hist.length) playAnimated(hist[idx]); }
+function stepBack() {
+  if (busy || idx <= 0) return;
+  if (reduceMotion || pending >= 0 || pendingTwist !== null) { goTo(idx - 1); return; }
+  const m = hist[idx - 1], inv = TWISTS[(m % 12) ^ 1];
+  busy = true; clearPreviewSets(); render();
+  commitLayer(inv.face, inv.dir, () => { busy = false; releaseLayer(); idx--; G = states[idx]; noteOverride = ""; refresh(); });
+}
+
+/* ---------------- Explorer: canonical lookup of every move ---------------- */
+function listsOf(cells) { const xs = [], os = []; for (let i = 0; i < 54; i++) { if (cells[i] === 1) xs.push(i); else if (cells[i] === 2) os.push(i); } return { xs, os }; }
+function computeRows() {
+  const t0 = performance.now();
+  const { xs, os } = listsOf(G.cells), mover = G.turn, side = mover === 1 ? 0 : 1;
+  curKey = CANON.key(xs, xs.length, os, os.length, side);
+  const empty = []; for (let i = 0; i < 54; i++) if (!G.cells[i]) empty.push(i);
+  const groups = new Map(), bx = new Int32Array(64), bo = new Int32Array(64);
+  for (let t = 0; t < 12; t++) {
+    const pt = PERM[t]; let nx = 0, no = 0;
+    for (let k = 0; k < xs.length; k++) bx[nx++] = pt[xs[k]];
+    for (let k = 0; k < os.length; k++) bo[no++] = pt[os[k]];
+    for (const c of empty) {
+      const p = pt[c];
+      if (mover === 1) bx[nx] = p; else bo[no] = p;
+      const key = CANON.key(bx, mover === 1 ? nx + 1 : nx, bo, mover === 2 ? no + 1 : no, 1 - side);
+      let g = groups.get(key); if (!g) groups.set(key, (g = []));
+      g.push(c * 12 + t);
+    }
+  }
+  // Only continuations that some game actually played from this position. A child entry is either a key string
+  // (then the child position's own totals are shown, which also count games that reached it another way) or
+  // [key, n, xw, dr, ow] with the counts of games that played this move from here.
+  const out = [], pn = DATA.nodes[curKey], edge = new Map(); let hasEdge = false;
+  if (pn) for (const c of pn[4]) { if (Array.isArray(c)) { edge.set(c[0], c); hasEdge = true; } else edge.set(c, null); }
+  groups.forEach((moves, key) => {
+    if (!edge.has(key)) return;
+    const nd = DATA.nodes[key]; if (!nd) return;
+    const e = edge.get(key); moves.sort((a, b) => a - b);
+    out.push(e ? { key, moves, n: e[1], xw: e[2], dr: e[3], ow: e[4] } : { key, moves, n: nd[0], xw: nd[1], dr: nd[2], ow: nd[3] });
+  });
+  out.sort((a, b) => b.n - a.n || a.moves[0] - b.moves[0]);
+  lastMs = performance.now() - t0;
+  return { out, hasEdge, orbit: CANON.orbit(xs, xs.length, os, os.length), legal: empty.length * 12, distinct: groups.size };
+}
+const pct = (a, n) => (n ? (100 * a) / n : 0);
+function barHtml(nd, labels) {
+  const n = nd.n, w = [pct(nd.xw, n), pct(nd.dr, n), pct(nd.ow, n)], cls = ["bx", "bd", "bo"];
+  return w.map((v, k) => '<span class="' + cls[k] + '" style="width:' + v.toFixed(2) + '%">' + (labels && v >= 9 ? Math.round(v) + "%" : "") + "</span>").join("");
+}
+function winsNow(m) { const r = applyMove(G, { slot: Math.floor(m / 12), t: m % 12 }); return r.winner === G.turn; }
+function fmtN(n) { return n >= 10000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + "k" : String(n); }
+
+function refresh() {
+  render();
+  if (!DATA) return;
+  const res = computeRows(); rows = res.out; hasEdge = res.hasEdge;
+  const nd = DATA.nodes[curKey];
+  $("chip").textContent = over(G) ? (G.winner ? P_(G.winner) : "=") : P_(G.turn); $("chip").className = "chip p" + (G.turn);
+  const marks = G.cells.reduce((a, c) => a + (c ? 1 : 0), 0);
+  if (over(G)) { $("who").textContent = G.winner ? P_(G.winner) + " wins" : "Draw"; }
+  else $("who").textContent = P_(G.turn) + " to move";
+  $("sub").textContent = "Move " + (Math.floor(G.ply / 2) + 1) + " · " + marks + (marks === 1 ? " mark" : " marks") + " on the cube";
+  if (nd) {
+    $("totalBar").innerHTML = barHtml({ n: nd[0], xw: nd[1], dr: nd[2], ow: nd[3] }, true); $("totalBar").hidden = false;
+    $("stats").innerHTML = "<span><b>" + nd[0].toLocaleString() + "</b> games</span><span>X wins <b>" + Math.round(pct(nd[1], nd[0])) + "%</b></span><span>draws <b>" + Math.round(pct(nd[2], nd[0])) + "%</b></span><span>O wins <b>" + Math.round(pct(nd[3], nd[0])) + "%</b></span>";
+  } else { $("totalBar").hidden = true; $("stats").textContent = ""; }
+  $("orbit").textContent = res.orbit > 1 ? res.orbit + " orientations of this position on the cube are counted together." : "";
+  const box = $("moves"); box.innerHTML = "";
+  if (!nd) { box.innerHTML = '<p class="empty-note">No games from here. This position is not in the data, but the board still works: you can keep playing, or go back.</p>'; }
+  else if (over(G)) { box.innerHTML = '<p class="empty-note">The game is over.</p>'; }
+  else if (!rows.length) { box.innerHTML = '<p class="empty-note">No games continue from here in the data (' + nd[0].toLocaleString() + (nd[0] === 1 ? " game ends" : " games end") + " here).</p>"; }
+  $("shHead").textContent = hasEdge ? "Share" : "Games";
+  rows.forEach((r) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "mv";
+    const rep = r.moves[0], k = r.moves.length;
+    b.innerHTML = '<span class="mt"><span>' + mvName(rep) + "</span>" + (k > 1 ? '<span class="eq" title="' + k + " moves that are the same up to rotation and reflection: " + r.moves.map(mvName).join(", ") + '">×' + k + "</span>" : "") +
+      (winsNow(rep) ? '<span class="win">wins</span>' : "") + '</span><span class="sh">' + (hasEdge ? Math.round(pct(r.n, nd[0])) + "%" : fmtN(r.n)) + "</span><span><span class=\"bar\">" + barHtml(r, true) + "</span></span>";
+    b.title = r.n.toLocaleString() + (hasEdge ? " games played this move" : " games reach the resulting position") + " · X " + Math.round(pct(r.xw, r.n)) + "% · draw " + Math.round(pct(r.dr, r.n)) + "% · O " + Math.round(pct(r.ow, r.n)) + "%" + (k > 1 ? " · " + k + " equivalent moves" : "");
+    const on = () => setPreview(r.moves), off = () => { clearPreviewSets(); clearPreview(); renderStickers(); renderNet(); };
+    b.addEventListener("mouseenter", on); b.addEventListener("focus", on); b.addEventListener("mouseleave", off); b.addEventListener("blur", off);
+    b.addEventListener("click", () => playAnimated(rep));
+    box.appendChild(b);
+  });
+  // played line
+  const ol = $("line"); ol.innerHTML = "";
+  hist.forEach((m, k) => {
+    const li = document.createElement("li");
+    if (k % 2 === 0) { const n = document.createElement("span"); n.className = "n"; n.textContent = k / 2 + 1 + "."; li.appendChild(n); }
+    const b = document.createElement("button"); b.type = "button"; b.className = (k % 2 ? "p2" : "p1") + (k === idx - 1 ? " on" : "") + (k >= idx ? " fut" : ""); b.textContent = mvName(m);
+    b.addEventListener("click", () => goTo(k + 1)); li.appendChild(b); ol.appendChild(li);
+  });
+  $("lineEmpty").hidden = hist.length > 0;
+  window.__explorer = { lastMs, curKey, rows: rows.map((r) => ({ key: r.key, moves: r.moves, n: r.n })), hist: hist.slice(), idx };
+}
+function setPreview(moves) {
+  previewCells = new Set(moves.map((m) => Math.floor(m / 12))); previewFaces = new Set(moves.map((m) => TWISTS[m % 12].face));
+  previewRep = Math.floor(moves[0] / 12); previewRepFace = TWISTS[moves[0] % 12].face;
+  const { face, dir } = TWISTS[moves[0] % 12];
+  if (canAct() && pending < 0 && pendingTwist === null) previewLayer(face, dir);
+  renderStickers(); renderNet();
+}
+function clearPreviewSets() { previewCells = new Set(); previewFaces = new Set(); previewRep = -1; previewRepFace = ""; }
+
+/* ---------------- DOM ---------------- */
+const netCells = [], padButtons = [];
+function buildDom() {
+  const net = $("net");
+  const mk = (f, dir) => {
+    const b = document.createElement("button"); b.type = "button"; b.id = "turn-" + f + dir;
+    b.textContent = dir === "cw" ? "↻" : "↺";
+    b.setAttribute("aria-label", "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise"));
+    b.title = "Turn " + FACES[f].name + (dir === "cw" ? " clockwise" : " counterclockwise") + " (key " + f + (dir === "cw" ? "" : " with Shift") + ")";
+    b.addEventListener("click", () => chooseTwist(f, dir));
+    const on = () => { if (!canAct()) return; highlightFace = f; previewLayer(f, dir); renderStickers(); renderNet(); };
+    const off = () => { highlightFace = null; clearPreview(); renderStickers(); renderNet(); };
+    b.addEventListener("mouseenter", on); b.addEventListener("focus", on);
+    b.addEventListener("mouseleave", off); b.addEventListener("blur", off);
+    padButtons.push({ b, f, dir }); return b;
+  };
+  ORDER.forEach((f, fi) => {
+    const wrap = document.createElement("div"); wrap.className = "nfw"; wrap.dataset.face = f;
+    const bar = document.createElement("div"); bar.className = "nbar";
+    const lab = document.createElement("span"); lab.textContent = f;
+    bar.append(mk(f, "ccw"), lab, mk(f, "cw"));
+    const nf = document.createElement("div"); nf.className = "nf"; nf.dataset.face = f;
+    for (let k = 0; k < 9; k++) {
+      const i = fi * 9 + k, b = document.createElement("button");
+      b.type = "button"; b.className = "cell"; b.id = "cell-" + i;
+      if (k === 4) b.dataset.label = f;
+      b.setAttribute("aria-label", FACES[f].name + " face, square " + (k + 1));
+      b.addEventListener("click", () => choosePlace(i));
+      b.addEventListener("mouseenter", () => { if (canAct() && !shownCells()[i]) setHover(i); });
+      b.addEventListener("mouseleave", () => setHover(-1));
+      nf.appendChild(b); netCells.push(b);
+    }
+    wrap.append(bar, nf); net.appendChild(wrap);
+  });
+  bindNetSlide();
+  $("bStart").addEventListener("click", () => goTo(0));
+  $("bBack").addEventListener("click", stepBack);
+  $("bFwd").addEventListener("click", stepForward);
+  $("bEnd").addEventListener("click", () => goTo(hist.length));
+  $("hint").textContent = "Drag a row to twist · drag the background to orbit";
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); stepBack(); return; }
+    if (e.key === "ArrowRight") { e.preventDefault(); stepForward(); return; }
+    if (e.key === "Home") { e.preventDefault(); goTo(0); return; }
+    if (e.key === "End") { e.preventDefault(); goTo(hist.length); return; }
+    const m = /^Key([UDLRFB])$/.exec(e.code);
+    if (m && canAct()) { e.preventDefault(); chooseTwist(m[1], e.shiftKey ? "ccw" : "cw"); }
+    if (e.key === "Escape" && pending >= 0 && canAct()) { pending = -1; render(); }
+    else if (e.key === "Escape" && pendingTwist !== null && canAct()) { const t = pendingTwist ^ 1; chooseTwist(TWISTS[t].face, TWISTS[t].dir); }
+  });
+}
+function winSet() { const s = new Set(); G.winLines.forEach((L) => L.forEach((i) => s.add(i))); return s; }
+function renderStickers() {
+  if (!stickers.length) return;
+  const ws = winSet(), act = canAct(), cells = shownCells(), pv = previewOn();
+  const landed = G.last ? G.last.landed : -1;
+  stickers.forEach((m) => {
+    const i = m.userData.slot, mark = cells[i];
+    const ghost = !mark && act && pending < 0 ? (i === hoverSlot || (pv && i === previewRep) ? G.turn : pv && previewCells.has(i) ? 10 + G.turn : 0) : 0;
+    const map = tex(mark, ghost, ws.has(i), i === pending || (pending < 0 && pendingTwist === null && i === landed));
+    if (m.material.map !== map) m.material.map = map;
+    m.material.color.set(highlightFace && inLayer(SLOTS[i], highlightFace) ? 0xbfccff : pv && SLOTS[i].face === previewRepFace ? 0xffe4a8 : pv && previewFaces.has(SLOTS[i].face) ? 0xfff6e6 : 0xffffff);
+  });
+}
+function renderNet() {
+  const ws = winSet(), act = canAct(), cells = shownCells(), pv = previewOn(), landed = G.last ? G.last.landed : -1;
+  netCells.forEach((b, i) => {
+    const strong = i === hoverSlot || (pv && i === previewRep), mark = cells[i], ghost = !mark && act && pending < 0 && (strong || (pv && previewCells.has(i)));
+    b.textContent = mark ? P_(mark) : ghost ? P_(G.turn) : "";
+    b.style.opacity = ghost ? (strong ? "0.6" : "0.22") : "";
+    b.className = "cell" + (mark ? " m" + mark : ghost ? " m" + G.turn : "") + (ws.has(i) ? " win" : "") +
+      (i === pending || (pending < 0 && pendingTwist === null && i === landed) ? " pending" : "") +
+      (highlightFace && inLayer(SLOTS[i], highlightFace) ? " hi" : pv && SLOTS[i].face === previewRepFace ? " hinted" : pv && previewFaces.has(SLOTS[i].face) ? " hinted2" : "");
+    const off = !act || !!cells[i]; b.classList.toggle("off", off); b.setAttribute("aria-disabled", String(off));
+  });
+}
+function render() {
+  renderStickers(); renderNet();
+  padButtons.forEach(({ b }) => { b.disabled = !canAct(); });
+  $("bStart").disabled = busy || idx === 0; $("bBack").disabled = busy || idx === 0;
+  $("bFwd").disabled = busy || idx >= hist.length; $("bEnd").disabled = busy || idx >= hist.length;
+  $("turnNote").textContent = noteOverride || (over(G) ? (G.winner ? P_(G.winner) + " has two lines. Step back to try another move." : "The board is full.") :
+    pendingTwist !== null ? "Twisted " + FACES[TWISTS[pendingTwist].face].name + ". Now place your mark, or turn it back to undo." :
+    pending >= 0 ? "Now twist: slide a row on the cube or the unfolded cube, or use the arrows. Tap your mark again to take it back." :
+    "Place a mark and twist a face, in either order. Slide a row on the cube or the unfolded cube to twist.");
+}
+
+function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = false; }
+function boot() {
+  initScene(); buildDom(); render();
+  $("aboutText").textContent = "";
+  Promise.all([fetch("sym.json").then((r) => { if (!r.ok) throw new Error("sym.json " + r.status); return r.json(); }),
+               fetch("data.json").then((r) => { if (!r.ok) throw new Error("data.json " + r.status); return r.json(); })])
+    .then(([sym, data]) => {
+      let bad = 0; for (let t = 0; t < 12; t++) for (let i = 0; i < 54; i++) if (sym.perm[t][i] !== PERM[t][i]) bad++;
+      if (bad) { console.warn("explorer: board geometry differs from sym.json in " + bad + " entries"); showError("The cube geometry on this page does not match the data (" + bad + " entries differ), so the statistics may not line up with the board."); }
+      SYM = sym; DATA = data; CANON = TwistCanon.make(sym.symCell);
+      const root = data.nodes[data.root];
+      $("aboutText").textContent = ABOUT(root ? root[0] : 0, Object.keys(data.nodes).length);
+      refresh();
+      console.log("explorer: root position, " + lastMs.toFixed(1) + " ms to look up " + (12 * 54) + " moves");
+    })
+    .catch((err) => { console.error(err); $("who").textContent = "No data"; showError("Could not load the explorer data (" + err.message + "). The board still works, but there are no statistics."); });
+}
+const ABOUT = (games, nodes) => "Each row is a move that appears in the data. Counts are games played by programs, not by people: " + games.toLocaleString() + " games and " + nodes.toLocaleString() +
+  " distinct positions in this file. X moves first. Positions that are the same after rotating or reflecting the cube are counted together, so a move that looks different on your cube can share a row with its mirror images (the x2, x3 tags). Percentages are the share of games passing through the position that X, O or neither won." +
+  " About 57% of the games are a forced-win rule system playing X against several weaker or random opponents, and it never loses, so those games all end in X wins and push the X percentage up, most of all after the centre opening. The rest, about 43%, are neural-net self-play, which is the fairer guide to how balanced an opening is. The numbers describe these games, not a solved value of the position. Lines past about move 12 are thin, because positions seen fewer than three times were dropped.";
+boot();
+
+})();
+</script>
+</body>
+</html>
